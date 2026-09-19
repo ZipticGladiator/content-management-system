@@ -932,6 +932,85 @@ label.f select {
   margin-right: 4px;
 }
 
+/* Inspiration */
+.insp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.insp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  color: var(--ink);
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.insp-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.insp-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.insp-platform {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+.insp-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+
+.insp-badge-competitor {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.insp-badge-inspiration {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.insp-name {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.insp-followers {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.insp-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 @media (max-width: 640px) {
   .formgrid {
     grid-template-columns: 1fr;

@@ -47,6 +47,16 @@ const STEPS: Step[] = [
     icon: <CalendarIcon size={30} />,
   },
   {
+    title: "YouTube Studio analytics",
+    body: "Connect your YouTube channel from the banner on the YouTube board to pull in real views, watch time, likes and comments on every published video — plus a channel-wide 30-day overview at the bottom of the page.",
+    icon: <YouTubeIcon size={30} />,
+  },
+  {
+    title: "Inspiration",
+    body: "Track other channels here — competitors and creators worth learning from — with their follower count and a note on what makes them worth watching. Sorted biggest first, filterable by type.",
+    icon: <CompassIcon size={30} />,
+  },
+  {
     title: "You're all set",
     body: "Toggle dark/light mode anytime from the top corner, and revisit this tour later from the ? button next to it. Go turn some ideas into videos.",
     icon: <CheckIcon size={30} />,

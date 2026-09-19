@@ -27,6 +27,13 @@ export function timeAgo(d: Date | string): string {
   return fmtDate(date);
 }
 
+export function formatCount(n: number): string {
+  const num = Number(n) || 0;
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(num % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(num % 1_000 === 0 ? 0 : 1)}K`;
+  return num.toLocaleString();
+}
+
 export function isLate(dueDate: Date | string | null, isDone: boolean): boolean {
   if (!dueDate || isDone) return false;
   const date = typeof dueDate === "string" ? new Date(dueDate) : dueDate;

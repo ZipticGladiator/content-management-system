@@ -14,6 +14,7 @@ const LINKS = [
   { href: "/tiktok", label: "TikTok", icon: <TikTokIcon size={16} /> },
   { href: "/scripts", label: "Scripts", icon: null },
   { href: "/calendar", label: "Calendar", icon: null },
+  { href: "/inspiration", label: "Inspiration", icon: null },
 ];
 
 export default function TopNav() {
