@@ -3,6 +3,7 @@ import { Rajdhani, Space_Grotesk, Fira_Code } from "next/font/google";
 import TopNav from "@/components/TopNav";
 import Onboarding from "@/components/Onboarding";
 import { getNotifications } from "@/lib/notifications";
+import { getCurrentUser } from "@/lib/session";
 import "./globals.css";
 
 const display = Rajdhani({
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
 const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('cms-theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const notifications = await getNotifications();
+  const [notifications, user] = await Promise.all([getNotifications(), getCurrentUser()]);
 
   return (
     <html
@@ -43,7 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
-        <TopNav notifications={notifications} />
+        <TopNav notifications={notifications} user={user} />
         {children}
         <Onboarding />
       </body>

@@ -3,16 +3,22 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSessionToken, SESSION_COOKIE } from "@/lib/auth";
+import { verifyPassword } from "@/lib/password";
+import { prisma } from "@/lib/prisma";
 
 export async function login(formData: FormData) {
-  const passphrase = String(formData.get("passphrase") || "");
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const password = String(formData.get("password") || "");
   const from = String(formData.get("from") || "/youtube");
 
-  if (passphrase !== process.env.APP_PASSPHRASE) {
+  const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
+  const ok = user ? await verifyPassword(password, user.passwordHash) : false;
+
+  if (!user || !ok) {
     redirect(`/login?error=1&from=${encodeURIComponent(from)}`);
   }
 
-  const token = await createSessionToken();
+  const token = await createSessionToken({ id: user.id, email: user.email, name: user.name, role: user.role });
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,

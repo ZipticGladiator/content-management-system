@@ -12,20 +12,24 @@ export default async function LoginPage({
   return (
     <div className="wrap" style={{ maxWidth: 420 }}>
       <h1>Sign in</h1>
-      <p className="sub">Enter the shared passphrase to access the CMS.</p>
+      <p className="sub">Sign in with your account to access the CMS.</p>
       <form action={login} style={{ marginTop: 24 }}>
         <input type="hidden" name="from" value={from ?? "/youtube"} />
         <label className="f full">
-          Passphrase
-          <input type="password" name="passphrase" required autoFocus />
+          Email
+          <input type="email" name="email" required autoFocus autoComplete="email" />
+        </label>
+        <label className="f full" style={{ marginTop: 12 }}>
+          Password
+          <input type="password" name="password" required autoComplete="current-password" />
         </label>
         {error ? (
           <p style={{ color: "var(--danger)", marginTop: 10, fontSize: 14 }}>
-            Wrong passphrase — try again.
+            Wrong email or password — try again.
           </p>
         ) : null}
         <button className="btn primary" type="submit" style={{ marginTop: 16 }}>
-          Enter
+          Sign in
         </button>
       </form>
     </div>

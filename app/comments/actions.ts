@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 import type { CommentEntry, ItemKind } from "@/lib/types";
 
 function toEntry(row: {
@@ -32,8 +33,9 @@ export async function getComments(kind: ItemKind, itemId: string): Promise<Comme
   return rows.map(toEntry);
 }
 
-export async function addComment(kind: ItemKind, itemId: string, author: string, body: string): Promise<CommentEntry> {
-  const cleanAuthor = author.trim() || "Anonymous";
+export async function addComment(kind: ItemKind, itemId: string, body: string): Promise<CommentEntry> {
+  const user = await getCurrentUser();
+  const cleanAuthor = user?.name || "Anonymous";
   const cleanBody = body.trim();
   const row = await prisma.comment.create({
     data: { ...fkFor(kind, itemId), author: cleanAuthor, body: cleanBody },

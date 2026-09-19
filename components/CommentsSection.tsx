@@ -6,8 +6,6 @@ import { timeAgo } from "@/lib/format";
 import type { CommentEntry, ItemKind } from "@/lib/types";
 import ActivityIcon from "@/components/icons/ActivityIcon";
 
-const AUTHOR_KEY = "cms-comment-author";
-
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "?";
@@ -16,13 +14,6 @@ function initials(name: string): string {
 
 export default function CommentsSection({ kind, itemId }: { kind: ItemKind; itemId: string }) {
   const [comments, setComments] = useState<CommentEntry[] | null>(null);
-  const [author, setAuthor] = useState(() => {
-    try {
-      return localStorage.getItem(AUTHOR_KEY) ?? "";
-    } catch {
-      return "";
-    }
-  });
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
 
@@ -41,14 +32,9 @@ export default function CommentsSection({ kind, itemId }: { kind: ItemKind; item
     if (!trimmedBody) return;
     setPosting(true);
     try {
-      const entry = await addComment(kind, itemId, author, trimmedBody);
+      const entry = await addComment(kind, itemId, trimmedBody);
       setComments((prev) => [...(prev ?? []), entry]);
       setBody("");
-      try {
-        localStorage.setItem(AUTHOR_KEY, author.trim());
-      } catch {
-        // ignore
-      }
     } finally {
       setPosting(false);
     }
@@ -124,12 +110,6 @@ export default function CommentsSection({ kind, itemId }: { kind: ItemKind; item
       </div>
 
       <div className="comment-composer">
-        <input
-          className="comment-author-input"
-          placeholder="Your name"
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
-        />
         <textarea
           rows={2}
           placeholder="Leave an update or comment… (⌘/Ctrl + Enter to post)"

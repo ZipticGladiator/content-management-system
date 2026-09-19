@@ -10,6 +10,7 @@ import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
 import HelpIcon from "@/components/icons/HelpIcon";
 import type { NotificationEntry } from "@/lib/notifications";
+import type { SessionPayload } from "@/lib/auth";
 
 const LINKS = [
   { href: "/youtube", label: "YouTube", icon: <YouTubeIcon size={16} /> },
@@ -22,7 +23,13 @@ const LINKS = [
   { href: "/trash", label: "Trash", icon: null },
 ];
 
-export default function TopNav({ notifications }: { notifications: NotificationEntry[] }) {
+export default function TopNav({
+  notifications,
+  user,
+}: {
+  notifications: NotificationEntry[];
+  user: SessionPayload | null;
+}) {
   const pathname = usePathname();
 
   if (pathname === "/login") return null;
@@ -48,6 +55,7 @@ export default function TopNav({ notifications }: { notifications: NotificationE
           <HelpIcon size={15} />
         </button>
         <ThemeToggle />
+        {user ? <span className="cat" style={{ whiteSpace: "nowrap" }}>{user.name}</span> : null}
         <form action={logout}>
           <button type="submit" className="btn">
             Log out
