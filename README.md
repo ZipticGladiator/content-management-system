@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Siya | Cybersecurity CMS
 
-## Getting Started
+A content management system for running Siya's cybersecurity YouTube and TikTok
+content, end to end: drafting ideas, tracking production status, writing
+scripts, and keeping the two platforms' pipelines organized in one place.
 
-First, run the development server:
+## What it does
+
+- **YouTube pipeline** — every video idea moves through six stages (Idea,
+  Scripting, Filming, Editing, Scheduled, Published) on a Kanban-style board
+  or a sortable list view. Each video tracks its category, due date, editing
+  cost, editor, a production checklist, and a "top pick" flag.
+- **TikTok pipeline** — its own, faster-moving board (Idea, Script, Film, Edit,
+  Posted), kept separate from YouTube since the two move at different speeds.
+- **Scripts workspace** — a dedicated space to draft and revise full scripts
+  for any video or clip, independent of the pitch/notes on the board itself,
+  with draft/final status.
+- **Shared access** — a single passphrase gates the whole app, so it can be
+  shared with an editor or collaborator without setting up full accounts.
+- **Dark cyber theme** — styled to match the Hacking Hub brand, with a
+  light-mode toggle for anyone who prefers it.
+
+## Stack
+
+- **Next.js** (App Router, TypeScript) + Tailwind CSS
+- **Prisma** + **PostgreSQL** (hosted on Supabase)
+- **Vercel** for hosting/deploy, **GitHub Actions** for CI
+
+## Getting started locally
 
 ```bash
+npm install
+cp .env.example .env   # fill in your database + auth values
+npm run db:migrate      # apply the schema to your database
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) — it redirects to the
+YouTube board.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See [.env.example](.env.example) for the full list:
 
-## Learn More
+- `DATABASE_URL` / `DIRECT_URL` — Postgres connection strings (pooled for the
+  app, direct for migrations).
+- `APP_PASSPHRASE` — the shared passphrase gating the app.
+- `AUTH_SECRET` — random secret used to sign login session cookies.
 
-To learn more about Next.js, take a look at the following resources:
+### Useful scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Generate the Prisma client and build for production |
+| `npm run lint` | Lint the codebase |
+| `npm run db:migrate` | Run Prisma migrations |
+| `npm run db:seed` | Seed the database |
+| `npm run db:studio` | Open Prisma Studio to browse the database |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deploys automatically to Vercel on every push to `main`. `DATABASE_URL`,
+`APP_PASSPHRASE`, and `AUTH_SECRET` need to be set as environment variables in
+the Vercel project settings.
