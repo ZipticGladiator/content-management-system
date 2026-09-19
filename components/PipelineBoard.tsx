@@ -88,6 +88,8 @@ export default function PipelineBoard({
   const [dialogItem, setDialogItem] = useState<PipelineItem | null | "new">(
     () => (initialOpenId ? items.find((i) => i.id === initialOpenId) ?? null : null)
   );
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   const topScrollRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -347,7 +349,21 @@ export default function PipelineBoard({
               .filter((i) => i.status === s[0])
               .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
             return (
-              <section className="col" key={s[0]}>
+              <section
+                className={`col${dragOverStage === s[0] ? " drag-over" : ""}`}
+                key={s[0]}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (draggingId) setDragOverStage(s[0]);
+                }}
+                onDragLeave={() => setDragOverStage((cur) => (cur === s[0] ? null : cur))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const id = e.dataTransfer.getData("text/plain") || draggingId;
+                  setDragOverStage(null);
+                  if (id) handleStatusChange(id, s[0]);
+                }}
+              >
                 <h2>
                   <i className="sw" style={{ background: `var(${s[2]})` }} />
                   {s[1]}
@@ -360,9 +376,19 @@ export default function PipelineBoard({
                     return (
                       <button
                         key={item.id}
-                        className="card"
+                        className={`card${draggingId === item.id ? " dragging" : ""}`}
                         style={{ ["--c" as string]: `var(${stageColorVar(stages, item.status)})` }}
                         onClick={() => setDialogItem(item)}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggingId(item.id);
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", item.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggingId(null);
+                          setDragOverStage(null);
+                        }}
                       >
                         {item.topPick ? <span className="top">Top pick</span> : null}
                         <span className="t">
