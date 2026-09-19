@@ -1,0 +1,95 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import type { ScriptStatus } from "@/app/generated/prisma/client";
+
+type Props = {
+  id: string;
+  parentTitle: string;
+  platform: "YouTube" | "TikTok";
+  initialBody: string;
+  initialStatus: ScriptStatus;
+  onSave: (id: string, body: string, status: ScriptStatus) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+};
+
+export default function ScriptEditor({
+  id,
+  parentTitle,
+  platform,
+  initialBody,
+  initialStatus,
+  onSave,
+  onDelete,
+}: Props) {
+  const router = useRouter();
+  const [body, setBody] = useState(initialBody);
+  const [status, setStatus] = useState<ScriptStatus>(initialStatus);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await onSave(id, body, status);
+      setDirty(false);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Delete this script for "${parentTitle}"?`)) return;
+    await onDelete(id);
+  }
+
+  return (
+    <div className="wrap">
+      <header className="page-header">
+        <div>
+          <p className="cat" style={{ marginBottom: 4 }}>
+            <Link className="linkish" href="/scripts">
+              ← All scripts
+            </Link>
+          </p>
+          <h1>{parentTitle}</h1>
+          <p className="sub">{platform} script</p>
+        </div>
+      </header>
+
+      <div className="bar">
+        <select
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value as ScriptStatus);
+            setDirty(true);
+          }}
+          aria-label="Script status"
+        >
+          <option value="DRAFT">Draft</option>
+          <option value="FINAL">Final</option>
+        </select>
+        <span className="grow" />
+        <button className="btn danger" onClick={handleDelete}>
+          Delete
+        </button>
+        <button className="btn primary" onClick={handleSave} disabled={saving || !dirty}>
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+
+      <textarea
+        className="scripteditor"
+        value={body}
+        onChange={(e) => {
+          setBody(e.target.value);
+          setDirty(true);
+        }}
+        placeholder="Write the script here — hook, sections, call to action…"
+      />
+    </div>
+  );
+}

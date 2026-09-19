@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Category {
+  SEQUELS
+  DEVSECOPS_CLOUD
+  HANDS_ON
+  COMMUNITY
+  SA_INDUSTRY
+}
+
+enum YoutubeStatus {
+  IDEA
+  SCRIPT
+  FILM
+  EDIT
+  SCHEDULED
+  PUBLISHED
+}
+
+enum TiktokStatus {
+  IDEA
+  SCRIPT
+  FILM
+  EDIT
+  POSTED
+}
+
+enum ScriptStatus {
+  DRAFT
+  FINAL
+}
+
+model YoutubeVideo {
+  id        String        @id @default(cuid())
+  title     String
+  pitch     String        @default("")
+  category  Category      @default(SEQUELS)
+  status    YoutubeStatus @default(IDEA)
+  dueDate   DateTime?
+  cost      Int           @default(0)
+  editor    String        @default("")
+  url       String        @default("")
+  topPick   Boolean       @default(false)
+
+  stepScript    Boolean @default(false)
+  stepFilm      Boolean @default(false)
+  stepEdit      Boolean @default(false)
+  stepThumbnail Boolean @default(false)
+  stepUpload    Boolean @default(false)
+
+  notes     String   @default("")
+  script    Script?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TiktokClip {
+  id        String       @id @default(cuid())
+  title     String
+  pitch     String       @default("")
+  category  Category     @default(SEQUELS)
+  status    TiktokStatus @default(IDEA)
+  dueDate   DateTime?
+  url       String       @default("")
+  notes     String       @default("")
+  script    Script?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Script {
+  id     String       @id @default(cuid())
+  body   String       @default("")
+  status ScriptStatus @default(DRAFT)
+
+  youtubeVideoId String?       @unique
+  youtubeVideo   YoutubeVideo? @relation(fields: [youtubeVideoId], references: [id], onDelete: Cascade)
+
+  tiktokClipId String?     @unique
+  tiktokClip   TiktokClip? @relation(fields: [tiktokClipId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
