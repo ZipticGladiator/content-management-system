@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ScriptStatus } from "@/app/generated/prisma/client";
-import { generateScriptDraft as callAi, type TopPerformer } from "@/lib/ai";
+import { generateScriptDraft as callAi, type DraftResult, type TopPerformer } from "@/lib/ai";
 import { extractYoutubeVideoId, fetchTopVideosByViews } from "@/lib/youtube-analytics";
 import { extractTiktokVideoId, fetchClipsViews } from "@/lib/tiktok-analytics";
 
@@ -79,10 +79,12 @@ async function topTiktokPerformers(limit: number): Promise<TopPerformer[]> {
 /**
  * Generates a hook + outline draft for a script from its parent video/clip's
  * pitch, plus this channel's best-performing past videos where analytics are
- * connected. Returns null (rather than throwing) when no ANTHROPIC_API_KEY is
- * configured, so the UI can show a setup hint instead of an error.
+ * connected. Returns a structured ok/reason result (rather than throwing or
+ * returning a bare null) so the UI can show the real cause of a failure —
+ * a missing GEMINI_API_KEY, a Gemini-side error, or a timeout — instead of
+ * always guessing it was the API key.
  */
-export async function generateScriptDraftForScript(scriptId: string): Promise<string | null> {
+export async function generateScriptDraftForScript(scriptId: string): Promise<DraftResult> {
   const script = await prisma.script.findUnique({
     where: { id: scriptId },
     include: {
@@ -90,10 +92,10 @@ export async function generateScriptDraftForScript(scriptId: string): Promise<st
       tiktokClip: { select: { title: true, pitch: true, category: true } },
     },
   });
-  if (!script) return null;
+  if (!script) return { ok: false, reason: "Script not found" };
 
   const parent = script.youtubeVideo ?? script.tiktokClip;
-  if (!parent) return null;
+  if (!parent) return { ok: false, reason: "Script has no parent video or clip" };
 
   const platform: "YouTube" | "TikTok" = script.youtubeVideo ? "YouTube" : "TikTok";
   const topPerformers = await (platform === "YouTube" ? topYoutubePerformers(3) : topTiktokPerformers(3));

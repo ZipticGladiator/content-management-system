@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ScriptStatus } from "@/app/generated/prisma/client";
+import type { DraftResult } from "@/lib/ai";
 
 type Props = {
   id: string;
@@ -13,8 +14,13 @@ type Props = {
   initialStatus: ScriptStatus;
   onSave: (id: string, body: string, status: ScriptStatus) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onGenerateDraft: (id: string) => Promise<string | null>;
+  onGenerateDraft: (id: string) => Promise<DraftResult>;
 };
+
+const GENERATE_ATTEMPTS = 3;
+// This model fails transiently often enough that a single try isn't
+// reliable, but a config error (no key set) will never succeed on retry.
+const NON_RETRYABLE_REASON = "GEMINI_API_KEY isn't configured";
 
 export default function ScriptEditor({
   id,
@@ -32,7 +38,7 @@ export default function ScriptEditor({
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [aiError, setAiError] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   async function handleSave() {
     setSaving(true);
@@ -53,14 +59,22 @@ export default function ScriptEditor({
   async function handleGenerateDraft() {
     if (body.trim() && !confirm("Replace the current script with an AI-generated draft?")) return;
     setGenerating(true);
-    setAiError(false);
+    setAiError(null);
     try {
-      const draft = await onGenerateDraft(id);
-      if (draft) {
-        setBody(draft);
+      let result: DraftResult = { ok: false, reason: "Something went wrong" };
+      for (let attempt = 0; attempt < GENERATE_ATTEMPTS; attempt++) {
+        // Each attempt is its own server action invocation, so a slow or
+        // failed try can't stack up into one request that risks a
+        // serverless timeout — see lib/ai.ts.
+        result = await onGenerateDraft(id);
+        if (result.ok || result.reason === NON_RETRYABLE_REASON) break;
+        if (attempt < GENERATE_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, 500));
+      }
+      if (result.ok) {
+        setBody(result.text);
         setDirty(true);
       } else {
-        setAiError(true);
+        setAiError(result.reason);
       }
     } finally {
       setGenerating(false);
@@ -107,7 +121,7 @@ export default function ScriptEditor({
 
       {aiError ? (
         <p className="cat" style={{ color: "var(--danger)", margin: "0 0 12px" }}>
-          Couldn&apos;t generate a draft — check that GEMINI_API_KEY is configured.
+          Couldn&apos;t generate a draft — {aiError}.
         </p>
       ) : null}
 
