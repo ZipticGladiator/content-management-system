@@ -1,6 +1,34 @@
 @import "tailwindcss";
 
-:root {
+:root,
+:root[data-theme="dark"] {
+  --bg: #050505;
+  --surface: #0d1420;
+  --sunk: #0a0f18;
+  --ink: #f4f6fb;
+  --muted: #94a3b8;
+  --line: rgba(255, 255, 255, 0.12);
+  --accent: #ccff00;
+  --accent-ink: #050505;
+  --warn: #facc15;
+  --danger: #ff2a5f;
+  --s-idea: #64748b;
+  --s-script: #7000ff;
+  --s-film: #0ed7b5;
+  --s-edit: #facc15;
+  --s-sched: #38bdf8;
+  --s-pub: #ccff00;
+  --s-posted: #ff2a5f;
+  --tiktok-accent: #ff2a5f;
+  --grid-line: rgba(255, 255, 255, 0.05);
+  --glow: 0 0 20px;
+  --display: var(--font-display), "Segoe UI", system-ui, sans-serif;
+  --body: var(--font-body), "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
   --bg: #f3f5f9;
   --surface: #ffffff;
   --sunk: #e9edf4;
@@ -19,33 +47,9 @@
   --s-pub: #2e8b57;
   --s-posted: #2e8b57;
   --tiktok-accent: #d0316c;
-  --display: var(--font-display), "Segoe UI", system-ui, sans-serif;
-  --body: var(--font-body), "Segoe UI", system-ui, -apple-system, sans-serif;
+  --grid-line: transparent;
+  --glow: 0 0 0px;
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #10151f;
-    --surface: #182030;
-    --sunk: #131a27;
-    --ink: #e6eaf2;
-    --muted: #9aa4b7;
-    --line: #2a3446;
-    --accent: #3cc2ba;
-    --accent-ink: #0b1a1a;
-    --warn: #e3a44b;
-    --danger: #f07167;
-    --s-idea: #7d889c;
-    --s-script: #9a8cf0;
-    --s-film: #3cc2ba;
-    --s-edit: #e3a44b;
-    --s-sched: #6b9cf5;
-    --s-pub: #5fc48a;
-    --s-posted: #5fc48a;
-    --tiktok-accent: #f06aa0;
-    color-scheme: dark;
-  }
 }
 
 * {
@@ -58,11 +62,16 @@ body {
 }
 
 body {
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
   color: var(--ink);
   font-family: var(--body);
   font-size: 15px;
   line-height: 1.5;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .wrap {
@@ -76,7 +85,7 @@ h1 {
   font-weight: 700;
   font-size: clamp(24px, 3.6vw, 38px);
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.01em;
   margin: 0;
 }
 
@@ -88,7 +97,11 @@ h1 {
 /* Top nav */
 .topnav {
   border-bottom: 1px solid var(--line);
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 
 .topnav-inner {
@@ -102,12 +115,35 @@ h1 {
 }
 
 .brand {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 18px;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.08em;
   color: var(--ink);
   text-decoration: none;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: var(--glow) var(--accent);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .navlinks {
@@ -119,10 +155,17 @@ h1 {
 .navlinks a {
   color: var(--muted);
   text-decoration: none;
+  font-family: var(--mono);
   font-weight: 500;
-  font-size: 14px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
   padding: 8px 12px;
   border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
 .navlinks a:hover {
@@ -133,6 +176,15 @@ h1 {
 .navlinks a[data-active="true"] {
   color: var(--ink);
   background: var(--sunk);
+  border-color: var(--line);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.theme-toggle {
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 header.page-header {
@@ -141,6 +193,20 @@ header.page-header {
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.page-icon {
+  display: inline-flex;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--sunk);
+  border: 1px solid var(--line);
 }
 
 .stats {
@@ -153,14 +219,17 @@ header.page-header {
 .stat b {
   display: block;
   font-family: var(--display);
-  font-size: 26px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   line-height: 1.1;
 }
 
 .stat span {
   color: var(--muted);
-  font-size: 13px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .stat.over b {
@@ -173,6 +242,7 @@ header.page-header {
   border-radius: 7px;
   overflow: hidden;
   background: var(--sunk);
+  border: 1px solid var(--line);
 }
 
 .pipe i {
@@ -185,7 +255,9 @@ header.page-header {
   flex-wrap: wrap;
   gap: 6px 18px;
   margin: 10px 0 0;
-  font-size: 13px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
   color: var(--muted);
 }
 
@@ -213,6 +285,7 @@ header.page-header {
 .tabs {
   display: inline-flex;
   background: var(--sunk);
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 3px;
 }
@@ -223,14 +296,15 @@ header.page-header {
   color: var(--muted);
   padding: 7px 14px;
   border-radius: 8px;
-  font: 500 14px var(--body);
+  font: 600 12px/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
 }
 
 .tabs button[aria-pressed="true"] {
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 .bar .grow {
@@ -267,16 +341,35 @@ button {
   padding: 8px 14px;
   font-weight: 500;
   cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+}
+
+.btn:active {
+  transform: translateY(1px);
 }
 
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
+  font-weight: 700;
+}
+
+.btn.primary:hover {
+  box-shadow: var(--glow) var(--accent);
 }
 
 .btn.danger {
   color: var(--danger);
+}
+
+.btn.danger:hover {
+  border-color: var(--danger);
+  box-shadow: var(--glow) var(--danger);
 }
 
 :focus-visible {
@@ -294,14 +387,18 @@ button {
 
 .col {
   background: var(--sunk);
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px;
   min-height: 120px;
 }
 
 .col h2 {
-  font: 600 14px var(--body);
-  margin: 2px 4px 10px;
+  font: 600 12px/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 2px 4px 12px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -309,8 +406,8 @@ button {
 
 .col h2 em {
   font-style: normal;
-  color: var(--muted);
-  font-weight: 500;
+  color: var(--ink);
+  font-weight: 600;
   margin-left: auto;
 }
 
@@ -320,16 +417,19 @@ button {
   text-align: left;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-left: 4px solid var(--c, var(--line));
+  border-left: 3px solid var(--c, var(--line));
   border-radius: 8px;
   padding: 10px 11px;
   margin-bottom: 8px;
   cursor: pointer;
   color: var(--ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .card:hover {
   border-color: var(--c);
+  box-shadow: 0 0 0 1px var(--c, var(--line)) inset;
+  transform: translateY(-1px);
 }
 
 .card .t {
@@ -343,7 +443,8 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 10px;
-  font-size: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
   color: var(--muted);
   margin-top: 6px;
 }
@@ -354,8 +455,11 @@ button {
 }
 
 .top {
-  font-size: 11px;
+  font-family: var(--mono);
+  font-size: 10px;
   font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--accent);
   display: block;
   margin-bottom: 3px;
@@ -373,6 +477,7 @@ button {
   display: block;
   height: 100%;
   background: var(--c, var(--accent));
+  box-shadow: var(--glow) var(--c, var(--accent));
 }
 
 .tablewrap {
@@ -398,9 +503,12 @@ td {
 }
 
 th {
+  font-family: var(--mono);
   font-weight: 600;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   background: var(--sunk);
   white-space: nowrap;
 }
@@ -431,7 +539,9 @@ td.num {
 
 .cat {
   color: var(--muted);
-  font-size: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
 .mini {
@@ -461,7 +571,7 @@ td.num {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 15, 25, 0.5);
+  background: rgba(0, 0, 0, 0.65);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -471,12 +581,12 @@ td.num {
 }
 
 .modal {
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: 14px;
   width: min(640px, 100%);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 .dlg {
@@ -503,7 +613,10 @@ label.f {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 13px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   font-weight: 500;
   color: var(--muted);
 }
@@ -511,6 +624,9 @@ label.f {
 label.f input,
 label.f select {
   width: 100%;
+  font-family: var(--body);
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .checks {
@@ -524,9 +640,13 @@ label.f select {
   align-items: center;
   gap: 6px;
   background: var(--sunk);
+  border: 1px solid var(--line);
   padding: 6px 10px;
   border-radius: 8px;
+  font-family: var(--body);
   font-size: 14px;
+  text-transform: none;
+  letter-spacing: normal;
   cursor: pointer;
 }
 
@@ -543,6 +663,7 @@ label.f select {
 
 .notice {
   background: var(--sunk);
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 14px;
@@ -553,7 +674,7 @@ label.f select {
 .scripteditor {
   width: 100%;
   min-height: 60vh;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--mono);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -575,5 +696,6 @@ label.f select {
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+    animation: none !important;
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   CATEGORY_KEYS,
@@ -18,6 +18,7 @@ type SortKey = "title" | "status" | "due" | "cost" | "prog";
 type Props = {
   title: string;
   subtitle: string;
+  icon?: ReactNode;
   items: PipelineItem[];
   stages: readonly StageDef[];
   steps?: readonly (readonly [string, string])[];
@@ -43,6 +44,7 @@ function pct(item: PipelineItem, stages: readonly StageDef[]) {
 export default function PipelineBoard({
   title,
   subtitle,
+  icon,
   items,
   stages,
   steps,
@@ -139,9 +141,12 @@ export default function PipelineBoard({
   return (
     <div className="wrap">
       <header className="page-header">
-        <div>
-          <h1>{title}</h1>
-          <p className="sub">{subtitle}</p>
+        <div className="page-title">
+          {icon ? <span className="page-icon">{icon}</span> : null}
+          <div>
+            <h1>{title}</h1>
+            <p className="sub">{subtitle}</p>
+          </div>
         </div>
       </header>
 

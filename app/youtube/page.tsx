@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { mapYoutubeVideo } from "@/lib/mappers";
 import { YOUTUBE_STAGES, YOUTUBE_STEPS } from "@/lib/pipeline";
 import PipelineBoard from "@/components/PipelineBoard";
+import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import {
   createYoutubeVideo,
   deleteYoutubeVideo,
@@ -21,6 +22,7 @@ export default async function YoutubePage() {
     <PipelineBoard
       title="YouTube pipeline"
       subtitle="Siya | Cybersecurity — long-form videos, idea to published"
+      icon={<YouTubeIcon size={36} />}
       items={videos.map(mapYoutubeVideo)}
       stages={YOUTUBE_STAGES}
       steps={YOUTUBE_STEPS}
