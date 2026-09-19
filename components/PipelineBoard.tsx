@@ -22,6 +22,7 @@ type Props = {
   title: string;
   subtitle: string;
   icon?: ReactNode;
+  initialOpenId?: string;
   items: PipelineItem[];
   stages: readonly StageDef[];
   steps?: readonly (readonly [string, string])[];
@@ -49,6 +50,7 @@ export default function PipelineBoard({
   title,
   subtitle,
   icon,
+  initialOpenId,
   items,
   stages,
   steps,
@@ -65,7 +67,9 @@ export default function PipelineBoard({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("due");
   const [dir, setDir] = useState(1);
-  const [dialogItem, setDialogItem] = useState<PipelineItem | null | "new">(null);
+  const [dialogItem, setDialogItem] = useState<PipelineItem | null | "new">(
+    () => (initialOpenId ? items.find((i) => i.id === initialOpenId) ?? null : null)
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

@@ -12,7 +12,12 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function YoutubePage() {
+export default async function YoutubePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ open?: string }>;
+}) {
+  const { open } = await searchParams;
   const videos = await prisma.youtubeVideo.findMany({
     include: { script: { select: { id: true } }, _count: { select: { comments: true } } },
     orderBy: { createdAt: "asc" },
@@ -24,6 +29,7 @@ export default async function YoutubePage() {
       title="YouTube pipeline"
       subtitle="Siya | Cybersecurity — long-form videos, idea to published"
       icon={<YouTubeIcon size={36} />}
+      initialOpenId={open}
       items={videos.map(mapYoutubeVideo)}
       stages={YOUTUBE_STAGES}
       steps={YOUTUBE_STEPS}

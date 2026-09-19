@@ -12,7 +12,12 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function TiktokPage() {
+export default async function TiktokPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ open?: string }>;
+}) {
+  const { open } = await searchParams;
   const clips = await prisma.tiktokClip.findMany({
     include: { script: { select: { id: true } }, _count: { select: { comments: true } } },
     orderBy: { createdAt: "asc" },
@@ -24,6 +29,7 @@ export default async function TiktokPage() {
       title="TikTok pipeline"
       subtitle="Siya | Cybersecurity — short-form clips, idea to posted"
       icon={<TikTokIcon size={36} />}
+      initialOpenId={open}
       items={clips.map(mapTiktokClip)}
       stages={TIKTOK_STAGES}
       showTopPick={false}

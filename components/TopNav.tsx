@@ -4,13 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/login/actions";
 import ThemeToggle from "@/components/ThemeToggle";
+import { openOnboarding } from "@/components/Onboarding";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
+import HelpIcon from "@/components/icons/HelpIcon";
 
 const LINKS = [
   { href: "/youtube", label: "YouTube", icon: <YouTubeIcon size={16} /> },
   { href: "/tiktok", label: "TikTok", icon: <TikTokIcon size={16} /> },
   { href: "/scripts", label: "Scripts", icon: null },
+  { href: "/calendar", label: "Calendar", icon: null },
 ];
 
 export default function TopNav() {
@@ -34,6 +37,9 @@ export default function TopNav() {
           ))}
         </nav>
         <span style={{ flex: 1 }} />
+        <button type="button" className="btn theme-toggle" onClick={openOnboarding} aria-label="Replay onboarding tour">
+          <HelpIcon size={15} />
+        </button>
         <ThemeToggle />
         <form action={logout}>
           <button type="submit" className="btn">

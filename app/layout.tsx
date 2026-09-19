@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Rajdhani, Space_Grotesk, Fira_Code } from "next/font/google";
 import TopNav from "@/components/TopNav";
+import Onboarding from "@/components/Onboarding";
 import "./globals.css";
 
 const display = Rajdhani({
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <TopNav />
         {children}
+        <Onboarding />
       </body>
     </html>
   );
