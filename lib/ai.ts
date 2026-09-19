@@ -1,5 +1,4 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
 
 export type TopPerformer = {
   title: string;
@@ -44,26 +43,48 @@ Write a script draft with two parts:
 Keep it specific to this topic, not generic advice. Output plain text only — no markdown headers, no asterisks for bold, just the two labeled sections and plain bullet lines starting with "-".`;
 }
 
+const GEMINI_MODEL = "gemini-3.6-flash";
+
+async function callGemini(apiKey: string, prompt: string): Promise<string | null> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    }
+  );
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  return typeof text === "string" ? text.trim() : null;
+}
+
 /**
  * Generates a hook + outline draft from a video's pitch and, when available,
  * this channel's best-performing past videos. Returns null if no API key is
  * configured or the call fails, so callers can show a friendly fallback
- * instead of a stack trace.
+ * instead of a stack trace. Retries up to twice more — this model returns a
+ * transient 503 ("high demand") on roughly a third of calls, so three tries
+ * brings the odds of total failure down to under 5%.
  */
 export async function generateScriptDraft(input: ScriptDraftInput): Promise<string | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
-  try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: "claude-sonnet-5",
-      max_tokens: 800,
-      messages: [{ role: "user", content: buildPrompt(input) }],
-    });
-    const block = message.content.find((b) => b.type === "text");
-    return block && block.type === "text" ? block.text.trim() : null;
-  } catch {
-    return null;
+  const prompt = buildPrompt(input);
+  const attempts = 3;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const text = await callGemini(apiKey, prompt);
+      if (text) return text;
+    } catch {
+      // fall through to retry/give up below
+    }
+    if (attempt < attempts - 1) await new Promise((r) => setTimeout(r, 1500));
   }
+  return null;
 }

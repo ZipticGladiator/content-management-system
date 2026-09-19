@@ -107,7 +107,7 @@ export default function ScriptEditor({
 
       {aiError ? (
         <p className="cat" style={{ color: "var(--danger)", margin: "0 0 12px" }}>
-          Couldn&apos;t generate a draft — check that ANTHROPIC_API_KEY is configured.
+          Couldn&apos;t generate a draft — check that GEMINI_API_KEY is configured.
         </p>
       ) : null}
 
