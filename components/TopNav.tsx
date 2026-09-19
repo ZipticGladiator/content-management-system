@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logout } from "@/app/login/actions";
 
 const LINKS = [
   { href: "/youtube", label: "YouTube" },
@@ -11,6 +12,8 @@ const LINKS = [
 
 export default function TopNav() {
   const pathname = usePathname();
+
+  if (pathname === "/login") return null;
 
   return (
     <div className="topnav">
@@ -29,6 +32,12 @@ export default function TopNav() {
             </Link>
           ))}
         </nav>
+        <span style={{ flex: 1 }} />
+        <form action={logout}>
+          <button type="submit" className="btn">
+            Log out
+          </button>
+        </form>
       </div>
     </div>
   );
