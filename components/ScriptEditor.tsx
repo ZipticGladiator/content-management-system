@@ -13,6 +13,7 @@ type Props = {
   initialStatus: ScriptStatus;
   onSave: (id: string, body: string, status: ScriptStatus) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onGenerateDraft: (id: string) => Promise<string | null>;
 };
 
 export default function ScriptEditor({
@@ -23,12 +24,15 @@ export default function ScriptEditor({
   initialStatus,
   onSave,
   onDelete,
+  onGenerateDraft,
 }: Props) {
   const router = useRouter();
   const [body, setBody] = useState(initialBody);
   const [status, setStatus] = useState<ScriptStatus>(initialStatus);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [aiError, setAiError] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -44,6 +48,23 @@ export default function ScriptEditor({
   async function handleDelete() {
     if (!confirm(`Delete this script for "${parentTitle}"?`)) return;
     await onDelete(id);
+  }
+
+  async function handleGenerateDraft() {
+    if (body.trim() && !confirm("Replace the current script with an AI-generated draft?")) return;
+    setGenerating(true);
+    setAiError(false);
+    try {
+      const draft = await onGenerateDraft(id);
+      if (draft) {
+        setBody(draft);
+        setDirty(true);
+      } else {
+        setAiError(true);
+      }
+    } finally {
+      setGenerating(false);
+    }
   }
 
   return (
@@ -73,6 +94,9 @@ export default function ScriptEditor({
           <option value="FINAL">Final</option>
         </select>
         <span className="grow" />
+        <button className="btn" onClick={handleGenerateDraft} disabled={generating}>
+          {generating ? "Generating…" : "Generate with AI"}
+        </button>
         <button className="btn danger" onClick={handleDelete}>
           Delete
         </button>
@@ -80,6 +104,12 @@ export default function ScriptEditor({
           {saving ? "Saving…" : "Save"}
         </button>
       </div>
+
+      {aiError ? (
+        <p className="cat" style={{ color: "var(--danger)", margin: "0 0 12px" }}>
+          Couldn&apos;t generate a draft — check that ANTHROPIC_API_KEY is configured.
+        </p>
+      ) : null}
 
       <textarea
         className="scripteditor"

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ScriptEditor from "@/components/ScriptEditor";
-import { deleteScript, updateScript } from "@/app/scripts/actions";
+import { deleteScript, generateScriptDraftForScript, updateScript } from "@/app/scripts/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +33,7 @@ export default async function ScriptPage({
       initialStatus={script.status}
       onSave={updateScript}
       onDelete={deleteScript}
+      onGenerateDraft={generateScriptDraftForScript}
     />
   );
 }

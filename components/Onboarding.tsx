@@ -34,7 +34,12 @@ const STEPS: Step[] = [
   },
   {
     title: "Scripts workspace",
-    body: "Write and revise full scripts in their own space, linked back to the video or clip they belong to. Start one from the Scripts tab, mark it Draft or Final as it comes together.",
+    body: "Write and revise full scripts in their own space, linked back to the video or clip they belong to. Start one from the Scripts tab, mark it Draft or Final as it comes together, and search across every script by title or content.",
+    icon: <DocumentIcon size={32} />,
+  },
+  {
+    title: "Generate a first draft with AI",
+    body: "Stuck on an opening line? Hit \"Generate with AI\" inside any script — it writes a hook and outline from the video's pitch, and borrows the style of whichever past videos on the channel actually performed best.",
     icon: <DocumentIcon size={32} />,
   },
   {

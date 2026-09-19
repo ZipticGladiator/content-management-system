@@ -49,6 +49,38 @@ export async function fetchClipStats(videoId: string): Promise<ClipStats | null>
   };
 }
 
+/**
+ * Fetches current view counts for several clips in one call, so ranking
+ * "best performing" doesn't need one request per clip. TikTok only exposes
+ * live cumulative counters, so this is a snapshot, not a lifetime-to-date
+ * measure the way YouTube's Analytics API provides.
+ */
+export async function fetchClipsViews(videoIds: string[]): Promise<{ videoId: string; views: number }[] | null> {
+  if (!videoIds.length) return [];
+  const accessToken = await getValidAccessToken();
+  if (!accessToken) return null;
+
+  const res = await fetch(
+    "https://open.tiktokapis.com/v2/video/query/?fields=id,view_count",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ filters: { video_ids: videoIds.slice(0, 20) } }),
+      next: { revalidate: 3600 },
+    }
+  );
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  const videos: { id: string; view_count?: number }[] | undefined = data.data?.videos;
+  if (!videos) return [];
+
+  return videos.map((v) => ({ videoId: v.id, views: v.view_count ?? 0 }));
+}
+
 export type AccountOverview = {
   followerCount: number;
   likesCount: number;

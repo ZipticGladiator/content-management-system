@@ -95,6 +95,37 @@ export async function fetchChannelOverview(): Promise<ChannelOverview | null> {
   return { views, estimatedMinutesWatched, likes, comments, subscribersGained, subscribersLost };
 }
 
+/**
+ * Fetches the channel's top videos by lifetime views in a single call, most
+ * viewed first. Returns null if not connected or the call fails.
+ */
+export async function fetchTopVideosByViews(limit = 10): Promise<{ videoId: string; views: number }[] | null> {
+  const accessToken = await getValidAccessToken();
+  if (!accessToken) return null;
+
+  const params = new URLSearchParams({
+    ids: "channel==MINE",
+    startDate: "2005-01-01",
+    endDate: new Date().toISOString().slice(0, 10),
+    metrics: "views",
+    dimensions: "video",
+    sort: "-views",
+    maxResults: String(limit),
+  });
+
+  const res = await fetch(`https://youtubeanalytics.googleapis.com/v2/reports?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    next: { revalidate: 3600 },
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  const rows: [string, number][] | undefined = data.rows;
+  if (!rows) return [];
+
+  return rows.map(([videoId, views]) => ({ videoId, views }));
+}
+
 /** Current subscriber count (a live snapshot, via the Data API rather than Analytics). */
 export async function fetchSubscriberCount(): Promise<number | null> {
   const accessToken = await getValidAccessToken();
