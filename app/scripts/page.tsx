@@ -1,30 +1,45 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { fmtDate } from "@/lib/format";
 import { createScriptForClip, createScriptForVideo } from "@/app/scripts/actions";
+import ScriptsList, { type ScriptRow } from "@/components/ScriptsList";
 
 export const dynamic = "force-dynamic";
 
 export default async function ScriptsPage() {
   const [scripts, videosWithoutScript, clipsWithoutScript] = await Promise.all([
     prisma.script.findMany({
-      include: {
+      where: {
+        OR: [{ youtubeVideo: { deletedAt: null } }, { tiktokClip: { deletedAt: null } }],
+      },
+      select: {
+        id: true,
+        body: true,
+        status: true,
+        updatedAt: true,
         youtubeVideo: { select: { id: true, title: true } },
         tiktokClip: { select: { id: true, title: true } },
       },
       orderBy: { updatedAt: "desc" },
     }),
     prisma.youtubeVideo.findMany({
-      where: { script: null },
+      where: { script: null, deletedAt: null },
       select: { id: true, title: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.tiktokClip.findMany({
-      where: { script: null },
+      where: { script: null, deletedAt: null },
       select: { id: true, title: true },
       orderBy: { createdAt: "asc" },
     }),
   ]);
+
+  const scriptRows: ScriptRow[] = scripts.map((s) => ({
+    id: s.id,
+    title: s.youtubeVideo?.title ?? s.tiktokClip?.title ?? "Untitled",
+    platform: s.youtubeVideo ? "YouTube" : "TikTok",
+    status: s.status,
+    updatedAt: s.updatedAt.toISOString(),
+    body: s.body,
+  }));
 
   return (
     <div className="wrap">
@@ -68,42 +83,7 @@ export default async function ScriptsPage() {
         </form>
       </div>
 
-      {scripts.length ? (
-        <div className="tablewrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Platform</th>
-                <th>Status</th>
-                <th>Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scripts.map((s) => {
-                const platform = s.youtubeVideo ? "YouTube" : "TikTok";
-                const parentTitle = s.youtubeVideo?.title ?? s.tiktokClip?.title ?? "Untitled";
-                return (
-                  <tr key={s.id}>
-                    <td>
-                      <Link className="linkish" href={`/scripts/${s.id}`}>
-                        {parentTitle}
-                      </Link>
-                    </td>
-                    <td className="cat">{platform}</td>
-                    <td className="cat">{s.status === "FINAL" ? "Final" : "Draft"}</td>
-                    <td className="cat">{fmtDate(s.updatedAt)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="tablewrap">
-          <div className="empty">No scripts yet. Start one from a video or clip above.</div>
-        </div>
-      )}
+      <ScriptsList scripts={scriptRows} />
     </div>
   );
 }

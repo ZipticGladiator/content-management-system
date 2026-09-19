@@ -68,6 +68,7 @@ model YoutubeVideo {
   editor    String        @default("")
   url       String        @default("")
   topPick   Boolean       @default(false)
+  deletedAt DateTime?
 
   stepScript    Boolean @default(false)
   stepFilm      Boolean @default(false)
@@ -81,6 +82,8 @@ model YoutubeVideo {
   attachments Attachment[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([deletedAt])
 }
 
 model TiktokClip {
@@ -95,11 +98,14 @@ model TiktokClip {
   editor      String       @default("")
   url         String       @default("")
   notes       String       @default("")
+  deletedAt   DateTime?
   script      Script?
   comments    Comment[]
   attachments Attachment[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+
+  @@index([deletedAt])
 }
 
 model Script {

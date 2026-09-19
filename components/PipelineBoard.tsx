@@ -33,6 +33,7 @@ type Props = {
   onCreate: (data: PipelineItemInput) => Promise<void>;
   onUpdate: (id: string, data: PipelineItemInput) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onDuplicate?: (id: string) => Promise<void>;
   onStatusChange: (id: string, status: string) => Promise<void>;
   connectPlatformLabel?: string;
   connectedAccount?: { title: string | null } | null;
@@ -70,6 +71,7 @@ export default function PipelineBoard({
   onCreate,
   onUpdate,
   onDelete,
+  onDuplicate,
   onStatusChange,
   connectPlatformLabel = "the platform",
   connectedAccount,
@@ -92,6 +94,14 @@ export default function PipelineBoard({
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [touchDrag, setTouchDrag] = useState<{
+    id: string;
+    touchId: number;
+    startX: number;
+    startY: number;
+    active: boolean;
+  } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkCategory, setBulkCategory] = useState<string>(CATEGORY_KEYS[0]);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -109,6 +119,65 @@ export default function PipelineBoard({
   function clearSelection() {
     setSelected(new Set());
   }
+
+  function handleTouchStart(id: string, e: React.TouchEvent) {
+    const t = e.touches[0];
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      setTouchDrag((prev) => (prev && prev.id === id ? { ...prev, active: true } : prev));
+      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+    }, 450);
+    setTouchDrag({ id, touchId: t.identifier, startX: t.clientX, startY: t.clientY, active: false });
+  }
+
+  // Long-press-then-drag for touch screens, since the HTML5 drag-and-drop API
+  // used for mouse dragging has no touch equivalent. Runs alongside it.
+  useEffect(() => {
+    if (!touchDrag) return;
+
+    function findStage(x: number, y: number): string | null {
+      const el = document.elementFromPoint(x, y);
+      const col = el ? (el as HTMLElement).closest<HTMLElement>(".col") : null;
+      return col?.dataset.stage ?? null;
+    }
+
+    function onMove(e: TouchEvent) {
+      const t = [...e.touches].find((t) => t.identifier === touchDrag!.touchId);
+      if (!t) return;
+      if (!touchDrag!.active) {
+        const dx = t.clientX - touchDrag!.startX;
+        const dy = t.clientY - touchDrag!.startY;
+        if (Math.hypot(dx, dy) > 10) {
+          if (longPressTimer.current) clearTimeout(longPressTimer.current);
+          setTouchDrag(null);
+        }
+        return;
+      }
+      e.preventDefault();
+      setDragOverStage(findStage(t.clientX, t.clientY));
+    }
+
+    function onEnd(e: TouchEvent) {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+      if (touchDrag!.active) {
+        const t = e.changedTouches[0];
+        const stageKey = t ? findStage(t.clientX, t.clientY) : null;
+        if (stageKey) handleStatusChange(touchDrag!.id, stageKey);
+      }
+      setDragOverStage(null);
+      setTouchDrag(null);
+    }
+
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+    document.addEventListener("touchcancel", onEnd);
+    return () => {
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [touchDrag]);
 
   async function applyBulkCategory() {
     setBulkBusy(true);
@@ -223,6 +292,14 @@ export default function PipelineBoard({
   async function handleDelete() {
     if (dialogItem && dialogItem !== "new") {
       await onDelete(dialogItem.id);
+      router.refresh();
+    }
+  }
+
+  async function handleDuplicate() {
+    if (dialogItem && dialogItem !== "new" && onDuplicate) {
+      await onDuplicate(dialogItem.id);
+      closeDialog();
       router.refresh();
     }
   }
@@ -440,6 +517,7 @@ export default function PipelineBoard({
               <section
                 className={`col${dragOverStage === s[0] ? " drag-over" : ""}`}
                 key={s[0]}
+                data-stage={s[0]}
                 onDragOver={(e) => {
                   e.preventDefault();
                   if (draggingId) setDragOverStage(s[0]);
@@ -466,7 +544,7 @@ export default function PipelineBoard({
                         key={item.id}
                         role="button"
                         tabIndex={0}
-                        className={`card${draggingId === item.id ? " dragging" : ""}${selected.has(item.id) ? " selected" : ""}`}
+                        className={`card${draggingId === item.id || (touchDrag?.active && touchDrag.id === item.id) ? " dragging" : ""}${selected.has(item.id) ? " selected" : ""}`}
                         style={{ ["--c" as string]: `var(${stageColorVar(stages, item.status)})` }}
                         onClick={() => setDialogItem(item)}
                         onKeyDown={(e) => {
@@ -485,6 +563,7 @@ export default function PipelineBoard({
                           setDraggingId(null);
                           setDragOverStage(null);
                         }}
+                        onTouchStart={(e) => handleTouchStart(item.id, e)}
                       >
                         <input
                           type="checkbox"
@@ -565,6 +644,7 @@ export default function PipelineBoard({
           onClose={closeDialog}
           onSave={handleSave}
           onDelete={dialogItem !== "new" ? handleDelete : undefined}
+          onDuplicate={dialogItem !== "new" && onDuplicate ? handleDuplicate : undefined}
         />
       ) : null}
 

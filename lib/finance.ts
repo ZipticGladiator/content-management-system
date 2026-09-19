@@ -11,12 +11,20 @@ export type EditorEntry = {
   notes: string;
 };
 
+export type UnpaidItem = {
+  id: string;
+  kind: "youtube" | "tiktok";
+  title: string;
+  cost: number;
+};
+
 export type EditorSpend = {
   editor: string;
   forecasted: number;
   paid: number;
   outstanding: number;
   count: number;
+  unpaidItems: UnpaidItem[];
 };
 
 export type PlatformSpend = {

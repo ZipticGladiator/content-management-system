@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import FinanceView from "@/components/FinanceView";
-import { createEditor, deleteEditor, updateEditor } from "@/app/finance/actions";
+import { createEditor, deleteEditor, markItemsPaid, updateEditor } from "@/app/finance/actions";
 import type { EditorEntry, EditorSpend, FinanceSummary, PlatformSpend } from "@/lib/finance";
 
 export const dynamic = "force-dynamic";
@@ -11,8 +11,14 @@ function emptyPlatform(): PlatformSpend {
 
 export default async function FinancePage() {
   const [videos, clips, editorRows] = await Promise.all([
-    prisma.youtubeVideo.findMany({ select: { cost: true, paid: true, editor: true } }),
-    prisma.tiktokClip.findMany({ select: { cost: true, paid: true, editor: true } }),
+    prisma.youtubeVideo.findMany({
+      where: { deletedAt: null },
+      select: { id: true, title: true, cost: true, paid: true, editor: true },
+    }),
+    prisma.tiktokClip.findMany({
+      where: { deletedAt: null },
+      select: { id: true, title: true, cost: true, paid: true, editor: true },
+    }),
     prisma.editor.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
 
@@ -20,7 +26,11 @@ export default async function FinancePage() {
   const tiktok = emptyPlatform();
   const editorMap = new Map<string, EditorSpend>();
 
-  function tally(platform: PlatformSpend, items: { cost: number; paid: boolean; editor: string }[]) {
+  function tally(
+    platform: PlatformSpend,
+    kind: "youtube" | "tiktok",
+    items: { id: string; title: string; cost: number; paid: boolean; editor: string }[]
+  ) {
     for (const item of items) {
       platform.count += 1;
       platform.forecasted += item.cost;
@@ -28,10 +38,15 @@ export default async function FinancePage() {
 
       const name = item.editor.trim();
       if (name) {
-        const existing = editorMap.get(name) ?? { editor: name, forecasted: 0, paid: 0, outstanding: 0, count: 0 };
+        const existing =
+          editorMap.get(name) ?? { editor: name, forecasted: 0, paid: 0, outstanding: 0, count: 0, unpaidItems: [] };
         existing.count += 1;
         existing.forecasted += item.cost;
-        if (item.paid) existing.paid += item.cost;
+        if (item.paid) {
+          existing.paid += item.cost;
+        } else if (item.cost > 0) {
+          existing.unpaidItems.push({ id: item.id, kind, title: item.title, cost: item.cost });
+        }
         existing.outstanding = existing.forecasted - existing.paid;
         editorMap.set(name, existing);
       }
@@ -39,8 +54,8 @@ export default async function FinancePage() {
     platform.outstanding = platform.forecasted - platform.paid;
   }
 
-  tally(youtube, videos);
-  tally(tiktok, clips);
+  tally(youtube, "youtube", videos);
+  tally(tiktok, "tiktok", clips);
 
   const summary: FinanceSummary = {
     totalForecasted: youtube.forecasted + tiktok.forecasted,
@@ -65,6 +80,13 @@ export default async function FinancePage() {
   }));
 
   return (
-    <FinanceView summary={summary} editors={editors} onCreate={createEditor} onUpdate={updateEditor} onDelete={deleteEditor} />
+    <FinanceView
+      summary={summary}
+      editors={editors}
+      onCreate={createEditor}
+      onUpdate={updateEditor}
+      onDelete={deleteEditor}
+      onMarkPaid={markItemsPaid}
+    />
   );
 }

@@ -45,3 +45,12 @@ export type StatEntry = {
   label: string;
   value: string;
 };
+
+export type TrashEntry = {
+  id: string;
+  kind: ItemKind;
+  title: string;
+  category: CategoryKey;
+  cost: number;
+  deletedAt: string;
+};

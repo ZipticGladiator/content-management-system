@@ -55,7 +55,25 @@ export async function updateYoutubeVideo(id: string, data: PipelineItemInput) {
 }
 
 export async function deleteYoutubeVideo(id: string) {
-  await prisma.youtubeVideo.delete({ where: { id } });
+  await prisma.youtubeVideo.update({ where: { id }, data: { deletedAt: new Date() } });
+  revalidatePath("/youtube");
+  revalidatePath("/trash");
+}
+
+export async function duplicateYoutubeVideo(id: string) {
+  const v = await prisma.youtubeVideo.findUnique({ where: { id } });
+  if (!v) return;
+  await prisma.youtubeVideo.create({
+    data: {
+      title: `${v.title} (copy)`,
+      pitch: v.pitch,
+      category: v.category,
+      status: YoutubeStatus.IDEA,
+      cost: v.cost,
+      editor: v.editor,
+      notes: v.notes,
+    },
+  });
   revalidatePath("/youtube");
 }
 

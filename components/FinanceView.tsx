@@ -9,6 +9,7 @@ import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
 import CompassIcon from "@/components/icons/CompassIcon";
 import type { EditorInput } from "@/app/finance/actions";
+import type { UnpaidItem } from "@/lib/finance";
 
 type Props = {
   summary: FinanceSummary;
@@ -16,6 +17,7 @@ type Props = {
   onCreate: (data: EditorInput) => Promise<void>;
   onUpdate: (id: string, data: EditorInput) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onMarkPaid: (items: UnpaidItem[]) => Promise<void>;
 };
 
 function maskAccount(number: string): string {
@@ -24,9 +26,20 @@ function maskAccount(number: string): string {
   return `•••• •••• ${last4}`;
 }
 
-export default function FinanceView({ summary, editors, onCreate, onUpdate, onDelete }: Props) {
+export default function FinanceView({ summary, editors, onCreate, onUpdate, onDelete, onMarkPaid }: Props) {
   const router = useRouter();
   const [dialogItem, setDialogItem] = useState<EditorEntry | null | "new">(null);
+  const [payingEditor, setPayingEditor] = useState<string | null>(null);
+
+  async function handleMarkPaid(editor: string, items: UnpaidItem[]) {
+    setPayingEditor(editor);
+    try {
+      await onMarkPaid(items);
+      router.refresh();
+    } finally {
+      setPayingEditor(null);
+    }
+  }
 
   function closeDialog() {
     setDialogItem(null);
@@ -115,6 +128,7 @@ export default function FinanceView({ summary, editors, onCreate, onUpdate, onDe
                   <th>Forecasted</th>
                   <th>Paid</th>
                   <th>Outstanding</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -125,6 +139,21 @@ export default function FinanceView({ summary, editors, onCreate, onUpdate, onDe
                     <td className="num">{rand(e.forecasted)}</td>
                     <td className="num">{rand(e.paid)}</td>
                     <td className="num">{rand(e.outstanding)}</td>
+                    <td>
+                      {e.unpaidItems.length ? (
+                        <button
+                          className="btn"
+                          onClick={() => handleMarkPaid(e.editor, e.unpaidItems)}
+                          disabled={payingEditor === e.editor}
+                        >
+                          {payingEditor === e.editor
+                            ? "Marking…"
+                            : `Mark ${e.unpaidItems.length} paid`}
+                        </button>
+                      ) : (
+                        <span className="cat">All paid</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

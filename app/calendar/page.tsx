@@ -27,11 +27,11 @@ export default async function CalendarPage({
 
   const [videos, clips] = await Promise.all([
     prisma.youtubeVideo.findMany({
-      where: { dueDate: { gte: rangeStart, lt: rangeEnd } },
+      where: { deletedAt: null, dueDate: { gte: rangeStart, lt: rangeEnd } },
       select: { id: true, title: true, dueDate: true },
     }),
     prisma.tiktokClip.findMany({
-      where: { dueDate: { gte: rangeStart, lt: rangeEnd } },
+      where: { deletedAt: null, dueDate: { gte: rangeStart, lt: rangeEnd } },
       select: { id: true, title: true, dueDate: true },
     }),
   ]);

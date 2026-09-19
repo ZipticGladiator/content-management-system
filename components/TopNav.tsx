@@ -19,6 +19,7 @@ const LINKS = [
   { href: "/inspiration", label: "Inspiration", icon: null },
   { href: "/goals", label: "Goals", icon: null },
   { href: "/finance", label: "Finance", icon: null },
+  { href: "/trash", label: "Trash", icon: null },
 ];
 
 export default function TopNav({ notifications }: { notifications: NotificationEntry[] }) {

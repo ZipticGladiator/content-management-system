@@ -20,17 +20,24 @@ export async function getNotifications(): Promise<NotificationEntry[]> {
 
   const [overdueVideos, overdueClips, recentComments] = await Promise.all([
     prisma.youtubeVideo.findMany({
-      where: { dueDate: { lt: today }, status: { not: "PUBLISHED" } },
+      where: { deletedAt: null, dueDate: { lt: today }, status: { not: "PUBLISHED" } },
       select: { id: true, title: true, dueDate: true },
       orderBy: { dueDate: "asc" },
     }),
     prisma.tiktokClip.findMany({
-      where: { dueDate: { lt: today }, status: { not: "POSTED" } },
+      where: { deletedAt: null, dueDate: { lt: today }, status: { not: "POSTED" } },
       select: { id: true, title: true, dueDate: true },
       orderBy: { dueDate: "asc" },
     }),
     prisma.comment.findMany({
-      where: { isSystem: false, createdAt: { gte: since } },
+      where: {
+        isSystem: false,
+        createdAt: { gte: since },
+        OR: [
+          { youtubeVideoId: { not: null }, youtubeVideo: { deletedAt: null } },
+          { tiktokClipId: { not: null }, tiktokClip: { deletedAt: null } },
+        ],
+      },
       select: {
         id: true,
         author: true,

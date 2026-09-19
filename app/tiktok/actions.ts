@@ -45,7 +45,25 @@ export async function updateTiktokClip(id: string, data: PipelineItemInput) {
 }
 
 export async function deleteTiktokClip(id: string) {
-  await prisma.tiktokClip.delete({ where: { id } });
+  await prisma.tiktokClip.update({ where: { id }, data: { deletedAt: new Date() } });
+  revalidatePath("/tiktok");
+  revalidatePath("/trash");
+}
+
+export async function duplicateTiktokClip(id: string) {
+  const c = await prisma.tiktokClip.findUnique({ where: { id } });
+  if (!c) return;
+  await prisma.tiktokClip.create({
+    data: {
+      title: `${c.title} (copy)`,
+      pitch: c.pitch,
+      category: c.category,
+      status: TiktokStatus.IDEA,
+      cost: c.cost,
+      editor: c.editor,
+      notes: c.notes,
+    },
+  });
   revalidatePath("/tiktok");
 }
 

@@ -19,6 +19,7 @@ type Props = {
   onClose: () => void;
   onSave: (data: PipelineItemInput) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onDuplicate?: () => Promise<void>;
 };
 
 export default function ItemDialog({
@@ -34,6 +35,7 @@ export default function ItemDialog({
   onClose,
   onSave,
   onDelete,
+  onDuplicate,
 }: Props) {
   const isNew = !initial;
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -50,6 +52,7 @@ export default function ItemDialog({
   const [stepState, setStepState] = useState<Record<string, boolean>>(initial?.steps ?? {});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,6 +87,16 @@ export default function ItemDialog({
       onClose();
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleDuplicate() {
+    if (!onDuplicate) return;
+    setDuplicating(true);
+    try {
+      await onDuplicate();
+    } finally {
+      setDuplicating(false);
     }
   }
 
@@ -212,6 +225,11 @@ export default function ItemDialog({
             {!isNew && onDelete ? (
               <button type="button" className="btn danger" onClick={handleDelete} disabled={deleting}>
                 {deleting ? "Deleting…" : "Delete"}
+              </button>
+            ) : null}
+            {!isNew && onDuplicate ? (
+              <button type="button" className="btn" onClick={handleDuplicate} disabled={duplicating}>
+                {duplicating ? "Duplicating…" : "Duplicate"}
               </button>
             ) : null}
             {url ? (

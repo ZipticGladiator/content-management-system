@@ -10,6 +10,7 @@ import type { StatEntry } from "@/lib/types";
 import {
   createTiktokClip,
   deleteTiktokClip,
+  duplicateTiktokClip,
   updateTiktokClip,
   updateTiktokStatus,
 } from "@/app/tiktok/actions";
@@ -24,6 +25,7 @@ export default async function TiktokPage({
   const { open, tiktok_connected, tiktok_error } = await searchParams;
   const [clips, editors] = await Promise.all([
     prisma.tiktokClip.findMany({
+      where: { deletedAt: null },
       include: {
         script: { select: { id: true } },
         _count: { select: { comments: true, attachments: true } },
@@ -79,6 +81,7 @@ export default async function TiktokPage({
       onCreate={createTiktokClip}
       onUpdate={updateTiktokClip}
       onDelete={deleteTiktokClip}
+      onDuplicate={duplicateTiktokClip}
       onStatusChange={updateTiktokStatus}
       connectPlatformLabel="TikTok"
       connectedAccount={account ? { title: account.displayName } : null}

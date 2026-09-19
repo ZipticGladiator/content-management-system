@@ -10,6 +10,7 @@ import type { StatEntry } from "@/lib/types";
 import {
   createYoutubeVideo,
   deleteYoutubeVideo,
+  duplicateYoutubeVideo,
   updateYoutubeStatus,
   updateYoutubeVideo,
 } from "@/app/youtube/actions";
@@ -24,6 +25,7 @@ export default async function YoutubePage({
   const { open, youtube_connected, youtube_error } = await searchParams;
   const [videos, editors] = await Promise.all([
     prisma.youtubeVideo.findMany({
+      where: { deletedAt: null },
       include: {
         script: { select: { id: true } },
         _count: { select: { comments: true, attachments: true } },
@@ -82,6 +84,7 @@ export default async function YoutubePage({
       onCreate={createYoutubeVideo}
       onUpdate={updateYoutubeVideo}
       onDelete={deleteYoutubeVideo}
+      onDuplicate={duplicateYoutubeVideo}
       onStatusChange={updateYoutubeStatus}
       connectPlatformLabel="YouTube Studio"
       connectedAccount={channel ? { title: channel.channelTitle } : null}
