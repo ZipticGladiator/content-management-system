@@ -23,7 +23,7 @@ const STEPS: Step[] = [
   },
   {
     title: "The YouTube pipeline",
-    body: "Every video idea moves through six stages — Idea, Scripting, Filming, Editing, Scheduled, Published. Drag through the board or switch to List view to sort and filter. Click any card to edit details, track editing cost, and tick off the production checklist.",
+    body: "Every video idea moves through six stages — Idea, Scripting, Filming, Editing, Scheduled, Published. Drag a card straight to another stage, or switch to List view to sort and filter. Click any card to edit details, track editing cost, and tick off the production checklist.",
     icon: <YouTubeIcon size={32} />,
   },
   {
@@ -47,14 +47,19 @@ const STEPS: Step[] = [
     icon: <CalendarIcon size={30} />,
   },
   {
-    title: "YouTube Studio analytics",
-    body: "Connect your YouTube channel from the banner on the YouTube board to pull in real views, watch time, likes and comments on every published video — plus a channel-wide 30-day overview at the bottom of the page.",
+    title: "Real platform analytics",
+    body: "Connect your YouTube and TikTok accounts from the banner on each board to pull in real views, likes, comments, and watch time on published items, plus an account-wide overview at the bottom of each page.",
     icon: <YouTubeIcon size={30} />,
   },
   {
     title: "Inspiration",
     body: "Track other channels here — competitors and creators worth learning from — with their follower count and a note on what makes them worth watching. Sorted biggest first, filterable by type.",
     icon: <CompassIcon size={30} />,
+  },
+  {
+    title: "Goals",
+    body: "Set subscriber or follower targets for each platform. Once connected, the current count updates live against your target — no more guessing how close you are.",
+    icon: <CheckIcon size={30} />,
   },
   {
     title: "You're all set",

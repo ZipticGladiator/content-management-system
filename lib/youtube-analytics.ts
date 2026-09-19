@@ -94,3 +94,21 @@ export async function fetchChannelOverview(): Promise<ChannelOverview | null> {
   const [views, estimatedMinutesWatched, likes, comments, subscribersGained, subscribersLost] = row;
   return { views, estimatedMinutesWatched, likes, comments, subscribersGained, subscribersLost };
 }
+
+/** Current subscriber count (a live snapshot, via the Data API rather than Analytics). */
+export async function fetchSubscriberCount(): Promise<number | null> {
+  const accessToken = await getValidAccessToken();
+  if (!accessToken) return null;
+
+  const res = await fetch(
+    "https://www.googleapis.com/youtube/v3/channels?part=statistics&mine=true",
+    { headers: { Authorization: `Bearer ${accessToken}` }, next: { revalidate: 3600 } }
+  );
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  const stats = data.items?.[0]?.statistics;
+  if (!stats) return null;
+
+  return Number(stats.subscriberCount) || 0;
+}

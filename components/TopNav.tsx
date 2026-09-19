@@ -15,6 +15,7 @@ const LINKS = [
   { href: "/scripts", label: "Scripts", icon: null },
   { href: "/calendar", label: "Calendar", icon: null },
   { href: "/inspiration", label: "Inspiration", icon: null },
+  { href: "/goals", label: "Goals", icon: null },
 ];
 
 export default function TopNav() {
