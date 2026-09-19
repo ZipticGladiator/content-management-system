@@ -5,6 +5,7 @@ import { CATEGORY_KEYS, CATEGORY_LABELS, type StageDef } from "@/lib/pipeline";
 import type { ItemKind, PipelineItem, PipelineItemInput } from "@/lib/types";
 import CommentsSection from "@/components/CommentsSection";
 import AttachmentsSection from "@/components/AttachmentsSection";
+import type { VideoStats } from "@/lib/youtube-analytics";
 
 type Props = {
   kind: ItemKind;
@@ -12,6 +13,7 @@ type Props = {
   steps?: readonly (readonly [string, string])[];
   showCostAndEditor?: boolean;
   showTopPick?: boolean;
+  stats?: VideoStats;
   initial: PipelineItem | null;
   onClose: () => void;
   onSave: (data: PipelineItemInput) => Promise<void>;
@@ -24,6 +26,7 @@ export default function ItemDialog({
   steps,
   showCostAndEditor,
   showTopPick = true,
+  stats,
   initial,
   onClose,
   onSave,
@@ -215,6 +218,29 @@ export default function ItemDialog({
         </form>
         {!isNew && initial ? (
           <div className="dlg" style={{ paddingTop: 0 }}>
+            {stats ? (
+              <div className="comments">
+                <h4 className="comments-heading">YouTube Studio stats</h4>
+                <div className="stats" style={{ margin: "0 0 4px" }}>
+                  <div className="stat">
+                    <b>{stats.views.toLocaleString()}</b>
+                    <span>views</span>
+                  </div>
+                  <div className="stat">
+                    <b>{Math.round(stats.estimatedMinutesWatched).toLocaleString()}</b>
+                    <span>minutes watched</span>
+                  </div>
+                  <div className="stat">
+                    <b>{stats.likes.toLocaleString()}</b>
+                    <span>likes</span>
+                  </div>
+                  <div className="stat">
+                    <b>{stats.comments.toLocaleString()}</b>
+                    <span>comments</span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <AttachmentsSection kind={kind} itemId={initial.id} />
             <CommentsSection kind={kind} itemId={initial.id} />
           </div>

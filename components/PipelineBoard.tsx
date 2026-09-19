@@ -15,6 +15,7 @@ import ItemDialog from "@/components/ItemDialog";
 import CommentIcon from "@/components/icons/CommentIcon";
 import CheckIcon from "@/components/icons/CheckIcon";
 import PaperclipIcon from "@/components/icons/PaperclipIcon";
+import type { VideoStats } from "@/lib/youtube-analytics";
 
 type SortKey = "title" | "status" | "due" | "cost" | "prog";
 
@@ -33,6 +34,11 @@ type Props = {
   onUpdate: (id: string, data: PipelineItemInput) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onStatusChange: (id: string, status: string) => Promise<void>;
+  youtubeChannel?: { title: string | null } | null;
+  youtubeConnectUrl?: string;
+  onDisconnectYoutube?: () => Promise<void>;
+  videoStats?: Record<string, VideoStats>;
+  connectNotice?: string;
 };
 
 function pct(item: PipelineItem, stages: readonly StageDef[]) {
@@ -61,6 +67,11 @@ export default function PipelineBoard({
   onUpdate,
   onDelete,
   onStatusChange,
+  youtubeChannel,
+  youtubeConnectUrl,
+  onDisconnectYoutube,
+  videoStats,
+  connectNotice,
 }: Props) {
   const router = useRouter();
   const [view, setView] = useState<"board" | "list">("board");
@@ -158,6 +169,44 @@ export default function PipelineBoard({
           </div>
         </div>
       </header>
+
+      {youtubeChannel !== undefined ? (
+        <div className="notice" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {connectNotice === "connected" ? (
+            <span>Connected to YouTube Studio.</span>
+          ) : connectNotice?.startsWith("error:") ? (
+            <span style={{ color: "var(--danger)" }}>
+              Couldn&apos;t connect: {connectNotice.slice(6)}
+            </span>
+          ) : null}
+          {youtubeChannel ? (
+            <>
+              <span>
+                Connected to YouTube Studio as <strong>{youtubeChannel.title ?? "your channel"}</strong> —
+                published videos show real view/watch stats.
+              </span>
+              <span className="grow" />
+              {onDisconnectYoutube ? (
+                <form action={onDisconnectYoutube}>
+                  <button type="submit" className="btn">
+                    Disconnect
+                  </button>
+                </form>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <span>Connect your YouTube channel to see real view and watch-time stats on published videos.</span>
+              <span className="grow" />
+              {youtubeConnectUrl ? (
+                <a className="btn primary" href={youtubeConnectUrl}>
+                  Connect YouTube
+                </a>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
 
       <div className="stats">
         <div className="stat">
@@ -323,6 +372,7 @@ export default function PipelineBoard({
           steps={steps}
           showCostAndEditor={showCostAndEditor}
           showTopPick={showTopPick}
+          stats={dialogItem !== "new" ? videoStats?.[dialogItem.id] : undefined}
           initial={dialogItem === "new" ? null : dialogItem}
           onClose={closeDialog}
           onSave={handleSave}
