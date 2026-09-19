@@ -313,18 +313,20 @@ export default function PipelineBoard({
                         onClick={() => setDialogItem(item)}
                       >
                         {item.topPick ? <span className="top">Top pick</span> : null}
-                        <span className="t">{item.title}</span>
+                        <span className="t">
+                          {item.title}
+                          {item.paid ? (
+                            <span title="Paid" style={{ marginLeft: 6 }}>
+                              <CheckIcon size={13} />
+                            </span>
+                          ) : null}
+                        </span>
                         <span className="meta">
                           <span>{CATEGORY_LABELS[item.category]}</span>
                           {item.dueDate ? (
                             <span className={late ? "late" : ""}>Due {fmtDate(item.dueDate)}</span>
                           ) : null}
-                          {item.cost ? (
-                            <span title={item.paid ? "Paid" : "Not paid yet"}>
-                              {rand(item.cost)}
-                              {item.paid ? <span style={{ marginLeft: 4 }}><CheckIcon size={11} /></span> : null}
-                            </span>
-                          ) : null}
+                          {item.cost ? <span title={item.paid ? "Paid" : "Not paid yet"}>{rand(item.cost)}</span> : null}
                           {item.attachmentCount ? (
                             <span className="comment-count">
                               <PaperclipIcon size={11} /> {item.attachmentCount}
@@ -459,6 +461,11 @@ function ListView({
                   <button className="linkish" onClick={() => onOpen(item)}>
                     {item.topPick ? "★ " : ""}
                     {item.title}
+                    {item.paid ? (
+                      <span title="Paid" style={{ marginLeft: 6 }}>
+                        <CheckIcon size={12} />
+                      </span>
+                    ) : null}
                   </button>
                   <div className="cat">{CATEGORY_LABELS[item.category]}</div>
                 </td>
@@ -491,10 +498,7 @@ function ListView({
                 {showCostAndEditor ? (
                   <td className="num" title={item.cost && item.paid ? "Paid" : item.cost ? "Not paid yet" : undefined}>
                     {item.cost ? (
-                      <>
-                        {rand(item.cost)}
-                        {item.paid ? <span style={{ marginLeft: 4 }}><CheckIcon size={12} /></span> : null}
-                      </>
+                      <>{rand(item.cost)}</>
                     ) : (
                       <span className="cat">—</span>
                     )}
