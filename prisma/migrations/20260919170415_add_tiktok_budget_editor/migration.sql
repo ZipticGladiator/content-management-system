@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "TiktokClip" ADD COLUMN     "cost" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "editor" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "paid" BOOLEAN NOT NULL DEFAULT false;

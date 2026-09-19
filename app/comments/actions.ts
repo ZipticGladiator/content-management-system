@@ -4,8 +4,20 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { CommentEntry, ItemKind } from "@/lib/types";
 
-function toEntry(row: { id: string; author: string; body: string; createdAt: Date }): CommentEntry {
-  return { id: row.id, author: row.author, body: row.body, createdAt: row.createdAt.toISOString() };
+function toEntry(row: {
+  id: string;
+  author: string;
+  body: string;
+  isSystem: boolean;
+  createdAt: Date;
+}): CommentEntry {
+  return {
+    id: row.id,
+    author: row.author,
+    body: row.body,
+    isSystem: row.isSystem,
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
 function fkFor(kind: ItemKind, itemId: string) {
@@ -28,6 +40,13 @@ export async function addComment(kind: ItemKind, itemId: string, author: string,
   });
   revalidatePath(kind === "youtube" ? "/youtube" : "/tiktok");
   return toEntry(row);
+}
+
+/** Logs an automatic system entry (e.g. a status change) into the same thread as regular comments. */
+export async function addSystemComment(kind: ItemKind, itemId: string, body: string): Promise<void> {
+  await prisma.comment.create({
+    data: { ...fkFor(kind, itemId), author: "Activity", body, isSystem: true },
+  });
 }
 
 export async function deleteComment(kind: ItemKind, id: string): Promise<void> {

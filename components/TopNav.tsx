@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { logout } from "@/app/login/actions";
 import ThemeToggle from "@/components/ThemeToggle";
 import { openOnboarding } from "@/components/Onboarding";
+import NotificationBell from "@/components/NotificationBell";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
 import HelpIcon from "@/components/icons/HelpIcon";
+import type { NotificationEntry } from "@/lib/notifications";
 
 const LINKS = [
   { href: "/youtube", label: "YouTube", icon: <YouTubeIcon size={16} /> },
@@ -16,9 +18,10 @@ const LINKS = [
   { href: "/calendar", label: "Calendar", icon: null },
   { href: "/inspiration", label: "Inspiration", icon: null },
   { href: "/goals", label: "Goals", icon: null },
+  { href: "/finance", label: "Finance", icon: null },
 ];
 
-export default function TopNav() {
+export default function TopNav({ notifications }: { notifications: NotificationEntry[] }) {
   const pathname = usePathname();
 
   if (pathname === "/login") return null;
@@ -39,6 +42,7 @@ export default function TopNav() {
           ))}
         </nav>
         <span style={{ flex: 1 }} />
+        <NotificationBell notifications={notifications} />
         <button type="button" className="btn theme-toggle" onClick={openOnboarding} aria-label="Replay onboarding tour">
           <HelpIcon size={15} />
         </button>

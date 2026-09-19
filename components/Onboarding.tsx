@@ -9,6 +9,7 @@ import CommentIcon from "@/components/icons/CommentIcon";
 import CheckIcon from "@/components/icons/CheckIcon";
 import CompassIcon from "@/components/icons/CompassIcon";
 import CalendarIcon from "@/components/icons/CalendarIcon";
+import BellIcon from "@/components/icons/BellIcon";
 
 const ONBOARD_KEY = "cms-onboarded";
 const OPEN_EVENT = "cms-open-onboarding";
@@ -60,6 +61,16 @@ const STEPS: Step[] = [
     title: "Goals",
     body: "Set subscriber or follower targets for each platform. Once connected, the current count updates live against your target — no more guessing how close you are.",
     icon: <CheckIcon size={30} />,
+  },
+  {
+    title: "Notifications",
+    body: "The bell icon in the top corner surfaces what needs attention — overdue videos and clips, plus comments from the last two days — without digging through every board.",
+    icon: <BellIcon size={28} />,
+  },
+  {
+    title: "Finance",
+    body: "See forecasted vs. paid spend across both platforms and by editor, plus a directory of editor rates and payment details for when it's time to pay out.",
+    icon: <DocumentIcon size={28} />,
   },
   {
     title: "You're all set",

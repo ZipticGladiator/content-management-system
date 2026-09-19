@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { addComment, deleteComment, getComments } from "@/app/comments/actions";
 import { timeAgo } from "@/lib/format";
 import type { CommentEntry, ItemKind } from "@/lib/types";
+import ActivityIcon from "@/components/icons/ActivityIcon";
 
 const AUTHOR_KEY = "cms-comment-author";
 
@@ -77,26 +78,48 @@ export default function CommentsSection({ kind, itemId }: { kind: ItemKind; item
         ) : comments.length === 0 ? (
           <p className="cat">No comments yet — leave an update below.</p>
         ) : (
-          comments.map((c) => (
-            <div className="comment" key={c.id}>
-              <span className="comment-avatar">{initials(c.author)}</span>
-              <div className="comment-body">
-                <div className="comment-meta">
-                  <span className="comment-author">{c.author}</span>
-                  <span className="cat">{timeAgo(c.createdAt)}</span>
-                  <button
-                    type="button"
-                    className="comment-delete"
-                    onClick={() => handleDelete(c.id)}
-                    aria-label="Delete comment"
-                  >
-                    ×
-                  </button>
+          comments.map((c) =>
+            c.isSystem ? (
+              <div className="comment activity-entry" key={c.id}>
+                <span className="comment-avatar activity-avatar">
+                  <ActivityIcon size={13} />
+                </span>
+                <div className="comment-body">
+                  <div className="comment-meta">
+                    <span className="cat">{c.body}</span>
+                    <span className="cat">{timeAgo(c.createdAt)}</span>
+                    <button
+                      type="button"
+                      className="comment-delete"
+                      onClick={() => handleDelete(c.id)}
+                      aria-label="Delete activity entry"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
-                <p className="comment-text">{c.body}</p>
               </div>
-            </div>
-          ))
+            ) : (
+              <div className="comment" key={c.id}>
+                <span className="comment-avatar">{initials(c.author)}</span>
+                <div className="comment-body">
+                  <div className="comment-meta">
+                    <span className="comment-author">{c.author}</span>
+                    <span className="cat">{timeAgo(c.createdAt)}</span>
+                    <button
+                      type="button"
+                      className="comment-delete"
+                      onClick={() => handleDelete(c.id)}
+                      aria-label="Delete comment"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p className="comment-text">{c.body}</p>
+                </div>
+              </div>
+            )
+          )
         )}
       </div>
 

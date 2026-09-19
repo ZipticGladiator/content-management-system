@@ -72,6 +72,7 @@ export default async function TiktokPage({
       items={clips.map(mapTiktokClip)}
       stages={TIKTOK_STAGES}
       showTopPick={false}
+      showCostAndEditor
       onCreate={createTiktokClip}
       onUpdate={updateTiktokClip}
       onDelete={deleteTiktokClip}

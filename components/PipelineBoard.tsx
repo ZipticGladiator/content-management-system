@@ -90,6 +90,67 @@ export default function PipelineBoard({
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkCategory, setBulkCategory] = useState<string>(CATEGORY_KEYS[0]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  function toggleSelect(id: string, e?: React.SyntheticEvent) {
+    e?.stopPropagation();
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelected(new Set());
+  }
+
+  async function applyBulkCategory() {
+    setBulkBusy(true);
+    try {
+      // Sequential on purpose: concurrent calls to the same bound server action
+      // reference (via Promise.all) were observed to silently drop all but one.
+      for (const id of selected) {
+        const item = items.find((i) => i.id === id);
+        if (!item) continue;
+        await onUpdate(id, {
+          title: item.title,
+          pitch: item.pitch,
+          category: bulkCategory as PipelineItem["category"],
+          status: item.status,
+          dueDate: item.dueDate,
+          cost: item.cost,
+          paid: item.paid,
+          editor: item.editor,
+          url: item.url,
+          topPick: item.topPick,
+          notes: item.notes,
+          steps: item.steps,
+        });
+      }
+      clearSelection();
+      router.refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function applyBulkDelete() {
+    if (!confirm(`Delete ${selected.size} selected item${selected.size === 1 ? "" : "s"}?`)) return;
+    setBulkBusy(true);
+    try {
+      for (const id of selected) {
+        await onDelete(id);
+      }
+      clearSelection();
+      router.refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   const topScrollRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -331,6 +392,31 @@ export default function PipelineBoard({
         </button>
       </div>
 
+      {selected.size > 0 ? (
+        <div className="notice" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span>
+            <strong>{selected.size}</strong> selected
+          </span>
+          <select value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)} aria-label="Bulk category">
+            {CATEGORY_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {CATEGORY_LABELS[key]}
+              </option>
+            ))}
+          </select>
+          <button className="btn" onClick={applyBulkCategory} disabled={bulkBusy}>
+            {bulkBusy ? "Applying…" : "Set category"}
+          </button>
+          <button className="btn danger" onClick={applyBulkDelete} disabled={bulkBusy}>
+            Delete selected
+          </button>
+          <span className="grow" />
+          <button className="btn" onClick={clearSelection} disabled={bulkBusy}>
+            Clear
+          </button>
+        </div>
+      ) : null}
+
       {view === "board" ? (
         <div className="board-topscroll" ref={topScrollRef} onScroll={handleTopScroll}>
           <div style={{ width: boardWidth, height: 1 }} />
@@ -374,11 +460,19 @@ export default function PipelineBoard({
                     const p = pct(item, stages);
                     const late = isLate(item.dueDate, item.status === publishedKey);
                     return (
-                      <button
+                      <div
                         key={item.id}
-                        className={`card${draggingId === item.id ? " dragging" : ""}`}
+                        role="button"
+                        tabIndex={0}
+                        className={`card${draggingId === item.id ? " dragging" : ""}${selected.has(item.id) ? " selected" : ""}`}
                         style={{ ["--c" as string]: `var(${stageColorVar(stages, item.status)})` }}
                         onClick={() => setDialogItem(item)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setDialogItem(item);
+                          }
+                        }}
                         draggable
                         onDragStart={(e) => {
                           setDraggingId(item.id);
@@ -390,6 +484,14 @@ export default function PipelineBoard({
                           setDragOverStage(null);
                         }}
                       >
+                        <input
+                          type="checkbox"
+                          className="card-select"
+                          checked={selected.has(item.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => toggleSelect(item.id, e)}
+                          aria-label={`Select ${item.title}`}
+                        />
                         {item.topPick ? <span className="top">Top pick</span> : null}
                         <span className="t">
                           {item.title}
@@ -419,7 +521,7 @@ export default function PipelineBoard({
                         <span className="prog">
                           <i style={{ width: `${p}%` }} />
                         </span>
-                      </button>
+                      </div>
                     );
                   })
                 ) : (
@@ -442,6 +544,8 @@ export default function PipelineBoard({
           onStatusChange={handleStatusChange}
           publishedKey={publishedKey}
           showCostAndEditor={showCostAndEditor}
+          selected={selected}
+          onToggleSelect={toggleSelect}
         />
       )}
 
@@ -491,6 +595,8 @@ function ListView({
   onStatusChange,
   publishedKey,
   showCostAndEditor,
+  selected,
+  onToggleSelect,
 }: {
   items: PipelineItem[];
   stages: readonly StageDef[];
@@ -501,6 +607,8 @@ function ListView({
   onStatusChange: (id: string, status: string) => void;
   publishedKey: string;
   showCostAndEditor?: boolean;
+  selected: Set<string>;
+  onToggleSelect: (id: string) => void;
 }) {
   if (!items.length) {
     return (
@@ -530,6 +638,7 @@ function ListView({
       <table>
         <thead>
           <tr>
+            <th style={{ width: 32 }}></th>
             {th("title", "Video")}
             {th("status", "Status")}
             {th("due", "Due date")}
@@ -552,7 +661,15 @@ function ListView({
                 );
             const late = isLate(item.dueDate, item.status === publishedKey);
             return (
-              <tr key={item.id}>
+              <tr key={item.id} className={selected.has(item.id) ? "row-selected" : ""}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(item.id)}
+                    onChange={() => onToggleSelect(item.id)}
+                    aria-label={`Select ${item.title}`}
+                  />
+                </td>
                 <td>
                   <button className="linkish" onClick={() => onOpen(item)}>
                     {item.topPick ? "★ " : ""}
@@ -606,7 +723,7 @@ function ListView({
           })}
           {showCostAndEditor ? (
             <tr className="foot">
-              <td colSpan={3}>Total editing cost ({items.length} videos)</td>
+              <td colSpan={4}>Total editing cost ({items.length} videos)</td>
               <td className="num">{rand(sum)}</td>
               <td></td>
               <td></td>

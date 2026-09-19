@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { Category, YoutubeStatus } from "@/app/generated/prisma/client";
-import { YOUTUBE_STEPS } from "@/lib/pipeline";
+import { YOUTUBE_STAGES, YOUTUBE_STEPS, stageLabel } from "@/lib/pipeline";
+import { addSystemComment } from "@/app/comments/actions";
 import type { PipelineItemInput } from "@/lib/types";
 
 function toData(data: PipelineItemInput) {
@@ -27,18 +28,29 @@ function toData(data: PipelineItemInput) {
   };
 }
 
+async function logStatusChange(id: string, from: string, to: string) {
+  if (from === to) return;
+  await addSystemComment(
+    "youtube",
+    id,
+    `Status changed: ${stageLabel(YOUTUBE_STAGES, from)} → ${stageLabel(YOUTUBE_STAGES, to)}`
+  );
+}
+
 export async function createYoutubeVideo(data: PipelineItemInput) {
   await prisma.youtubeVideo.create({ data: toData(data) });
   revalidatePath("/youtube");
 }
 
 export async function updateYoutubeVideo(id: string, data: PipelineItemInput) {
+  const existing = await prisma.youtubeVideo.findUnique({ where: { id }, select: { status: true } });
   const payload = toData(data);
   const doneSteps: Record<string, boolean> = {};
   if (payload.status === YoutubeStatus.PUBLISHED) {
     for (const [key] of YOUTUBE_STEPS) doneSteps[key] = true;
   }
   await prisma.youtubeVideo.update({ where: { id }, data: { ...payload, ...doneSteps } });
+  if (existing) await logStatusChange(id, existing.status, payload.status);
   revalidatePath("/youtube");
 }
 
@@ -48,10 +60,12 @@ export async function deleteYoutubeVideo(id: string) {
 }
 
 export async function updateYoutubeStatus(id: string, status: string) {
+  const existing = await prisma.youtubeVideo.findUnique({ where: { id }, select: { status: true } });
   const data: Record<string, unknown> = { status: status as YoutubeStatus };
   if (status === YoutubeStatus.PUBLISHED) {
     for (const [key] of YOUTUBE_STEPS) data[key] = true;
   }
   await prisma.youtubeVideo.update({ where: { id }, data });
+  if (existing) await logStatusChange(id, existing.status, status);
   revalidatePath("/youtube");
 }

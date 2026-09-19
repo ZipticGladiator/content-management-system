@@ -187,6 +187,78 @@ h1 {
   justify-content: center;
 }
 
+.notif-wrap {
+  position: relative;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  z-index: 60;
+}
+
+.notif-section {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.notif-section:last-child {
+  border-bottom: 0;
+}
+
+.notif-section h5 {
+  margin: 0;
+  padding: 4px 14px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.notif-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.notif-item:hover {
+  background: var(--sunk);
+}
+
+.notif-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
 header.page-header {
   display: flex;
   flex-wrap: wrap;
@@ -449,6 +521,17 @@ button {
   cursor: grabbing;
 }
 
+.card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+.card-select {
+  display: block;
+  margin: 0 0 6px;
+  cursor: pointer;
+}
+
 .card .t {
   font-weight: 600;
   font-size: 14px;
@@ -532,6 +615,10 @@ th {
 
 tr:last-child td {
   border-bottom: 0;
+}
+
+tr.row-selected td {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 td.num {
@@ -747,6 +834,16 @@ label.f select {
   font-size: 11px;
   font-weight: 600;
   color: var(--accent);
+}
+
+.activity-entry {
+  opacity: 0.75;
+}
+
+.activity-avatar {
+  color: var(--muted);
+  background: transparent;
+  border-style: dashed;
 }
 
 .comment-body {

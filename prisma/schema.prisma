@@ -90,6 +90,9 @@ model TiktokClip {
   category    Category     @default(EDUCATIONAL)
   status      TiktokStatus @default(IDEA)
   dueDate     DateTime?
+  cost        Int          @default(0)
+  paid        Boolean      @default(false)
+  editor      String       @default("")
   url         String       @default("")
   notes       String       @default("")
   script      Script?
@@ -115,9 +118,10 @@ model Script {
 }
 
 model Comment {
-  id     String @id @default(cuid())
-  author String
-  body   String
+  id       String  @id @default(cuid())
+  author   String
+  body     String
+  isSystem Boolean @default(false)
 
   youtubeVideoId String?       @map("youtube_video_id")
   youtubeVideo   YoutubeVideo? @relation(fields: [youtubeVideoId], references: [id], onDelete: Cascade)
@@ -184,12 +188,37 @@ model Inspiration {
 }
 
 model Goal {
-  id             String       @id @default(cuid())
-  platform       GoalPlatform
-  label          String       @default("")
-  target         Int
-  manualCurrent  Int          @default(0)
-  deadline       DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id            String         @id @default(cuid())
+  platform      GoalPlatform
+  label         String         @default("")
+  target        Int
+  manualCurrent Int            @default(0)
+  deadline      DateTime?
+  snapshots     GoalSnapshot[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model GoalSnapshot {
+  id         String   @id @default(cuid())
+  goalId     String
+  goal       Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  value      Int
+  capturedAt DateTime @default(now())
+
+  @@index([goalId])
+}
+
+model Editor {
+  id            String   @id @default(cuid())
+  name          String
+  rate          Int      @default(0)
+  rateUnit      String   @default("per video")
+  bankName      String   @default("")
+  accountHolder String   @default("")
+  accountNumber String   @default("")
+  branchCode    String   @default("")
+  notes         String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
