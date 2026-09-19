@@ -67,6 +67,18 @@ export async function duplicateTiktokClip(id: string) {
   revalidatePath("/tiktok");
 }
 
+/**
+ * Narrow, category-only update for the board's bulk-recategorize action.
+ * Deliberately doesn't go through updateTiktokClip, which rebuilds the
+ * whole record from a client-side snapshot — if that snapshot is stale
+ * (e.g. a status change made moments earlier hasn't round-tripped yet),
+ * a bulk category update would silently revert it.
+ */
+export async function updateTiktokCategory(id: string, category: string) {
+  await prisma.tiktokClip.update({ where: { id }, data: { category: category as Category } });
+  revalidatePath("/tiktok");
+}
+
 export async function updateTiktokStatus(id: string, status: string) {
   const existing = await prisma.tiktokClip.findUnique({ where: { id }, select: { status: true } });
   await prisma.tiktokClip.update({ where: { id }, data: { status: status as TiktokStatus } });

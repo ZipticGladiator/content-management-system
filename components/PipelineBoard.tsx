@@ -35,6 +35,7 @@ type Props = {
   onDelete: (id: string) => Promise<void>;
   onDuplicate?: (id: string) => Promise<void>;
   onStatusChange: (id: string, status: string) => Promise<void>;
+  onCategoryChange: (id: string, category: string) => Promise<void>;
   connectPlatformLabel?: string;
   connectedAccount?: { title: string | null } | null;
   connectUrl?: string;
@@ -73,6 +74,7 @@ export default function PipelineBoard({
   onDelete,
   onDuplicate,
   onStatusChange,
+  onCategoryChange,
   connectPlatformLabel = "the platform",
   connectedAccount,
   connectUrl,
@@ -184,23 +186,13 @@ export default function PipelineBoard({
     try {
       // Sequential on purpose: concurrent calls to the same bound server action
       // reference (via Promise.all) were observed to silently drop all but one.
+      // Also deliberately a narrow category-only update (not onUpdate, which
+      // rebuilds the whole record from this component's possibly-stale items
+      // prop) — reconstructing every other field from stale client state
+      // risks silently reverting a change (e.g. a status update) that hasn't
+      // round-tripped back into `items` yet.
       for (const id of selected) {
-        const item = items.find((i) => i.id === id);
-        if (!item) continue;
-        await onUpdate(id, {
-          title: item.title,
-          pitch: item.pitch,
-          category: bulkCategory as PipelineItem["category"],
-          status: item.status,
-          dueDate: item.dueDate,
-          cost: item.cost,
-          paid: item.paid,
-          editor: item.editor,
-          url: item.url,
-          topPick: item.topPick,
-          notes: item.notes,
-          steps: item.steps,
-        });
+        await onCategoryChange(id, bulkCategory);
       }
       clearSelection();
       router.refresh();

@@ -77,6 +77,18 @@ export async function duplicateYoutubeVideo(id: string) {
   revalidatePath("/youtube");
 }
 
+/**
+ * Narrow, category-only update for the board's bulk-recategorize action.
+ * Deliberately doesn't go through updateYoutubeVideo, which rebuilds the
+ * whole record from a client-side snapshot — if that snapshot is stale
+ * (e.g. a status change made moments earlier hasn't round-tripped yet),
+ * a bulk category update would silently revert it.
+ */
+export async function updateYoutubeCategory(id: string, category: string) {
+  await prisma.youtubeVideo.update({ where: { id }, data: { category: category as Category } });
+  revalidatePath("/youtube");
+}
+
 export async function updateYoutubeStatus(id: string, status: string) {
   const existing = await prisma.youtubeVideo.findUnique({ where: { id }, select: { status: true } });
   const data: Record<string, unknown> = { status: status as YoutubeStatus };

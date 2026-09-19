@@ -11,6 +11,7 @@ import {
   createTiktokClip,
   deleteTiktokClip,
   duplicateTiktokClip,
+  updateTiktokCategory,
   updateTiktokClip,
   updateTiktokStatus,
 } from "@/app/tiktok/actions";
@@ -83,6 +84,7 @@ export default async function TiktokPage({
       onDelete={deleteTiktokClip}
       onDuplicate={duplicateTiktokClip}
       onStatusChange={updateTiktokStatus}
+      onCategoryChange={updateTiktokCategory}
       connectPlatformLabel="TikTok"
       connectedAccount={account ? { title: account.displayName } : null}
       connectUrl={buildAuthUrl()}

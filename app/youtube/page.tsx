@@ -11,6 +11,7 @@ import {
   createYoutubeVideo,
   deleteYoutubeVideo,
   duplicateYoutubeVideo,
+  updateYoutubeCategory,
   updateYoutubeStatus,
   updateYoutubeVideo,
 } from "@/app/youtube/actions";
@@ -86,6 +87,7 @@ export default async function YoutubePage({
       onDelete={deleteYoutubeVideo}
       onDuplicate={duplicateYoutubeVideo}
       onStatusChange={updateYoutubeStatus}
+      onCategoryChange={updateYoutubeCategory}
       connectPlatformLabel="YouTube Studio"
       connectedAccount={channel ? { title: channel.channelTitle } : null}
       connectUrl={buildAuthUrl()}
