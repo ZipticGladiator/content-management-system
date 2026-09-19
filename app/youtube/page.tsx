@@ -4,7 +4,12 @@ import { YOUTUBE_STAGES, YOUTUBE_STEPS } from "@/lib/pipeline";
 import PipelineBoard from "@/components/PipelineBoard";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import { buildAuthUrl, getConnectedChannel } from "@/lib/youtube-oauth";
-import { extractYoutubeVideoId, fetchVideoStats, type VideoStats } from "@/lib/youtube-analytics";
+import {
+  extractYoutubeVideoId,
+  fetchChannelOverview,
+  fetchVideoStats,
+  type VideoStats,
+} from "@/lib/youtube-analytics";
 import { disconnectYoutubeChannel } from "@/app/youtube/youtube-auth-actions";
 import {
   createYoutubeVideo,
@@ -31,16 +36,21 @@ export default async function YoutubePage({
 
   const channel = await getConnectedChannel();
   const videoStats: Record<string, VideoStats> = {};
+  let channelOverview = null;
 
   if (channel) {
     const published = videos.filter((v) => v.status === "PUBLISHED" && extractYoutubeVideoId(v.url));
-    await Promise.all(
-      published.map(async (v) => {
-        const ytId = extractYoutubeVideoId(v.url)!;
-        const stats = await fetchVideoStats(ytId);
-        if (stats) videoStats[v.id] = stats;
-      })
-    );
+    const [, overview] = await Promise.all([
+      Promise.all(
+        published.map(async (v) => {
+          const ytId = extractYoutubeVideoId(v.url)!;
+          const stats = await fetchVideoStats(ytId);
+          if (stats) videoStats[v.id] = stats;
+        })
+      ),
+      fetchChannelOverview(),
+    ]);
+    channelOverview = overview;
   }
 
   return (
@@ -62,6 +72,7 @@ export default async function YoutubePage({
       youtubeConnectUrl={buildAuthUrl()}
       onDisconnectYoutube={disconnectYoutubeChannel}
       videoStats={videoStats}
+      channelOverview={channelOverview}
       connectNotice={youtube_connected ? "connected" : youtube_error ? `error:${youtube_error}` : undefined}
     />
   );

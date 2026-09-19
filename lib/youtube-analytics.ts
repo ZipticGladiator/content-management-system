@@ -54,3 +54,43 @@ export async function fetchVideoStats(videoId: string): Promise<VideoStats | nul
   const [, views, estimatedMinutesWatched, likes, comments] = row;
   return { views, estimatedMinutesWatched, likes, comments };
 }
+
+export type ChannelOverview = {
+  views: number;
+  estimatedMinutesWatched: number;
+  likes: number;
+  comments: number;
+  subscribersGained: number;
+  subscribersLost: number;
+};
+
+/**
+ * Fetches channel-wide totals for the trailing 30 days. Returns null if not
+ * connected or the call fails.
+ */
+export async function fetchChannelOverview(): Promise<ChannelOverview | null> {
+  const accessToken = await getValidAccessToken();
+  if (!accessToken) return null;
+
+  const end = new Date();
+  const start = new Date(end.getTime() - 30 * 86400000);
+  const params = new URLSearchParams({
+    ids: "channel==MINE",
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+    metrics: "views,estimatedMinutesWatched,likes,comments,subscribersGained,subscribersLost",
+  });
+
+  const res = await fetch(`https://youtubeanalytics.googleapis.com/v2/reports?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    next: { revalidate: 3600 },
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  const row: number[] | undefined = data.rows?.[0];
+  if (!row) return null;
+
+  const [views, estimatedMinutesWatched, likes, comments, subscribersGained, subscribersLost] = row;
+  return { views, estimatedMinutesWatched, likes, comments, subscribersGained, subscribersLost };
+}

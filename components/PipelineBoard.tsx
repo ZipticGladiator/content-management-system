@@ -15,7 +15,7 @@ import ItemDialog from "@/components/ItemDialog";
 import CommentIcon from "@/components/icons/CommentIcon";
 import CheckIcon from "@/components/icons/CheckIcon";
 import PaperclipIcon from "@/components/icons/PaperclipIcon";
-import type { VideoStats } from "@/lib/youtube-analytics";
+import type { ChannelOverview, VideoStats } from "@/lib/youtube-analytics";
 
 type SortKey = "title" | "status" | "due" | "cost" | "prog";
 
@@ -38,6 +38,7 @@ type Props = {
   youtubeConnectUrl?: string;
   onDisconnectYoutube?: () => Promise<void>;
   videoStats?: Record<string, VideoStats>;
+  channelOverview?: ChannelOverview | null;
   connectNotice?: string;
 };
 
@@ -71,6 +72,7 @@ export default function PipelineBoard({
   youtubeConnectUrl,
   onDisconnectYoutube,
   videoStats,
+  channelOverview,
   connectNotice,
 }: Props) {
   const router = useRouter();
@@ -426,6 +428,40 @@ export default function PipelineBoard({
           onSave={handleSave}
           onDelete={dialogItem !== "new" ? handleDelete : undefined}
         />
+      ) : null}
+
+      {channelOverview ? (
+        <section style={{ marginTop: 40 }}>
+          <h2 style={{ fontFamily: "var(--display)", fontSize: 20, margin: "0 0 4px" }}>
+            Channel overview — last 30 days
+          </h2>
+          <p className="sub" style={{ margin: "0 0 16px" }}>Pulled live from YouTube Studio</p>
+          <div className="stats">
+            <div className="stat">
+              <b>{channelOverview.views.toLocaleString()}</b>
+              <span>views</span>
+            </div>
+            <div className="stat">
+              <b>{Math.round(channelOverview.estimatedMinutesWatched).toLocaleString()}</b>
+              <span>minutes watched</span>
+            </div>
+            <div className="stat">
+              <b>{channelOverview.likes.toLocaleString()}</b>
+              <span>likes</span>
+            </div>
+            <div className="stat">
+              <b>{channelOverview.comments.toLocaleString()}</b>
+              <span>comments</span>
+            </div>
+            <div className="stat">
+              <b>
+                {channelOverview.subscribersGained - channelOverview.subscribersLost >= 0 ? "+" : ""}
+                {(channelOverview.subscribersGained - channelOverview.subscribersLost).toLocaleString()}
+              </b>
+              <span>net subscribers</span>
+            </div>
+          </div>
+        </section>
       ) : null}
     </div>
   );
