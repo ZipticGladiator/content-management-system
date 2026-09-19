@@ -39,3 +39,8 @@ export type AttachmentEntry = {
   url: string;
   createdAt: string;
 };
+
+export type StatEntry = {
+  label: string;
+  value: string;
+};

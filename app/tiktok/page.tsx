@@ -3,6 +3,10 @@ import { mapTiktokClip } from "@/lib/mappers";
 import { TIKTOK_STAGES } from "@/lib/pipeline";
 import PipelineBoard from "@/components/PipelineBoard";
 import TikTokIcon from "@/components/icons/TikTokIcon";
+import { buildAuthUrl, getConnectedAccount } from "@/lib/tiktok-oauth";
+import { extractTiktokVideoId, fetchAccountOverview, fetchClipStats } from "@/lib/tiktok-analytics";
+import { disconnectTiktokAccount } from "@/app/tiktok/tiktok-auth-actions";
+import type { StatEntry } from "@/lib/types";
 import {
   createTiktokClip,
   deleteTiktokClip,
@@ -15,9 +19,9 @@ export const dynamic = "force-dynamic";
 export default async function TiktokPage({
   searchParams,
 }: {
-  searchParams: Promise<{ open?: string }>;
+  searchParams: Promise<{ open?: string; tiktok_connected?: string; tiktok_error?: string }>;
 }) {
-  const { open } = await searchParams;
+  const { open, tiktok_connected, tiktok_error } = await searchParams;
   const clips = await prisma.tiktokClip.findMany({
     include: {
       script: { select: { id: true } },
@@ -25,6 +29,38 @@ export default async function TiktokPage({
     },
     orderBy: { createdAt: "asc" },
   });
+
+  const account = await getConnectedAccount();
+  const itemStats: Record<string, StatEntry[]> = {};
+  let overview: StatEntry[] | null = null;
+
+  if (account) {
+    const posted = clips.filter((c) => c.status === "POSTED" && extractTiktokVideoId(c.url));
+    const [, accountOverview] = await Promise.all([
+      Promise.all(
+        posted.map(async (c) => {
+          const clipId = extractTiktokVideoId(c.url)!;
+          const stats = await fetchClipStats(clipId);
+          if (stats) {
+            itemStats[c.id] = [
+              { label: "views", value: stats.views.toLocaleString() },
+              { label: "likes", value: stats.likes.toLocaleString() },
+              { label: "comments", value: stats.comments.toLocaleString() },
+              { label: "shares", value: stats.shares.toLocaleString() },
+            ];
+          }
+        })
+      ),
+      fetchAccountOverview(),
+    ]);
+    if (accountOverview) {
+      overview = [
+        { label: "followers", value: accountOverview.followerCount.toLocaleString() },
+        { label: "total likes", value: accountOverview.likesCount.toLocaleString() },
+        { label: "videos posted", value: accountOverview.videoCount.toLocaleString() },
+      ];
+    }
+  }
 
   return (
     <PipelineBoard
@@ -40,6 +76,14 @@ export default async function TiktokPage({
       onUpdate={updateTiktokClip}
       onDelete={deleteTiktokClip}
       onStatusChange={updateTiktokStatus}
+      connectPlatformLabel="TikTok"
+      connectedAccount={account ? { title: account.displayName } : null}
+      connectUrl={buildAuthUrl()}
+      onDisconnect={disconnectTiktokAccount}
+      itemStats={itemStats}
+      overviewTitle="Account overview (current totals)"
+      overview={overview}
+      connectNotice={tiktok_connected ? "connected" : tiktok_error ? `error:${tiktok_error}` : undefined}
     />
   );
 }

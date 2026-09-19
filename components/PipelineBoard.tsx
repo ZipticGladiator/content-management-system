@@ -15,7 +15,7 @@ import ItemDialog from "@/components/ItemDialog";
 import CommentIcon from "@/components/icons/CommentIcon";
 import CheckIcon from "@/components/icons/CheckIcon";
 import PaperclipIcon from "@/components/icons/PaperclipIcon";
-import type { ChannelOverview, VideoStats } from "@/lib/youtube-analytics";
+import type { StatEntry } from "@/lib/types";
 
 type SortKey = "title" | "status" | "due" | "cost" | "prog";
 
@@ -34,11 +34,13 @@ type Props = {
   onUpdate: (id: string, data: PipelineItemInput) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onStatusChange: (id: string, status: string) => Promise<void>;
-  youtubeChannel?: { title: string | null } | null;
-  youtubeConnectUrl?: string;
-  onDisconnectYoutube?: () => Promise<void>;
-  videoStats?: Record<string, VideoStats>;
-  channelOverview?: ChannelOverview | null;
+  connectPlatformLabel?: string;
+  connectedAccount?: { title: string | null } | null;
+  connectUrl?: string;
+  onDisconnect?: () => Promise<void>;
+  itemStats?: Record<string, StatEntry[]>;
+  overviewTitle?: string;
+  overview?: StatEntry[] | null;
   connectNotice?: string;
 };
 
@@ -68,11 +70,13 @@ export default function PipelineBoard({
   onUpdate,
   onDelete,
   onStatusChange,
-  youtubeChannel,
-  youtubeConnectUrl,
-  onDisconnectYoutube,
-  videoStats,
-  channelOverview,
+  connectPlatformLabel = "the platform",
+  connectedAccount,
+  connectUrl,
+  onDisconnect,
+  itemStats,
+  overviewTitle = "Account overview",
+  overview,
   connectNotice,
 }: Props) {
   const router = useRouter();
@@ -207,24 +211,24 @@ export default function PipelineBoard({
         </div>
       </header>
 
-      {youtubeChannel !== undefined ? (
+      {connectedAccount !== undefined ? (
         <div className="notice" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           {connectNotice === "connected" ? (
-            <span>Connected to YouTube Studio.</span>
+            <span>Connected to {connectPlatformLabel}.</span>
           ) : connectNotice?.startsWith("error:") ? (
             <span style={{ color: "var(--danger)" }}>
               Couldn&apos;t connect: {connectNotice.slice(6)}
             </span>
           ) : null}
-          {youtubeChannel ? (
+          {connectedAccount ? (
             <>
               <span>
-                Connected to YouTube Studio as <strong>{youtubeChannel.title ?? "your channel"}</strong> —
-                published videos show real view/watch stats.
+                Connected to {connectPlatformLabel} as <strong>{connectedAccount.title ?? "your account"}</strong> —
+                published items show real stats.
               </span>
               <span className="grow" />
-              {onDisconnectYoutube ? (
-                <form action={onDisconnectYoutube}>
+              {onDisconnect ? (
+                <form action={onDisconnect}>
                   <button type="submit" className="btn">
                     Disconnect
                   </button>
@@ -233,11 +237,11 @@ export default function PipelineBoard({
             </>
           ) : (
             <>
-              <span>Connect your YouTube channel to see real view and watch-time stats on published videos.</span>
+              <span>Connect your {connectPlatformLabel} account to see real stats on published items.</span>
               <span className="grow" />
-              {youtubeConnectUrl ? (
-                <a className="btn primary" href={youtubeConnectUrl}>
-                  Connect YouTube
+              {connectUrl ? (
+                <a className="btn primary" href={connectUrl}>
+                  Connect {connectPlatformLabel}
                 </a>
               ) : null}
             </>
@@ -422,7 +426,8 @@ export default function PipelineBoard({
           steps={steps}
           showCostAndEditor={showCostAndEditor}
           showTopPick={showTopPick}
-          stats={dialogItem !== "new" ? videoStats?.[dialogItem.id] : undefined}
+          stats={dialogItem !== "new" ? itemStats?.[dialogItem.id] : undefined}
+          statsLabel={`${connectPlatformLabel} stats`}
           initial={dialogItem === "new" ? null : dialogItem}
           onClose={closeDialog}
           onSave={handleSave}
@@ -430,36 +435,19 @@ export default function PipelineBoard({
         />
       ) : null}
 
-      {channelOverview ? (
+      {overview && overview.length ? (
         <section style={{ marginTop: 40 }}>
           <h2 style={{ fontFamily: "var(--display)", fontSize: 20, margin: "0 0 4px" }}>
-            Channel overview — last 30 days
+            {overviewTitle}
           </h2>
-          <p className="sub" style={{ margin: "0 0 16px" }}>Pulled live from YouTube Studio</p>
+          <p className="sub" style={{ margin: "0 0 16px" }}>Pulled live from {connectPlatformLabel}</p>
           <div className="stats">
-            <div className="stat">
-              <b>{channelOverview.views.toLocaleString()}</b>
-              <span>views</span>
-            </div>
-            <div className="stat">
-              <b>{Math.round(channelOverview.estimatedMinutesWatched).toLocaleString()}</b>
-              <span>minutes watched</span>
-            </div>
-            <div className="stat">
-              <b>{channelOverview.likes.toLocaleString()}</b>
-              <span>likes</span>
-            </div>
-            <div className="stat">
-              <b>{channelOverview.comments.toLocaleString()}</b>
-              <span>comments</span>
-            </div>
-            <div className="stat">
-              <b>
-                {channelOverview.subscribersGained - channelOverview.subscribersLost >= 0 ? "+" : ""}
-                {(channelOverview.subscribersGained - channelOverview.subscribersLost).toLocaleString()}
-              </b>
-              <span>net subscribers</span>
-            </div>
+            {overview.map((s) => (
+              <div className="stat" key={s.label}>
+                <b>{s.value}</b>
+                <span>{s.label}</span>
+              </div>
+            ))}
           </div>
         </section>
       ) : null}

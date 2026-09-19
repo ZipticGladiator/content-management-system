@@ -4,13 +4,9 @@ import { YOUTUBE_STAGES, YOUTUBE_STEPS } from "@/lib/pipeline";
 import PipelineBoard from "@/components/PipelineBoard";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import { buildAuthUrl, getConnectedChannel } from "@/lib/youtube-oauth";
-import {
-  extractYoutubeVideoId,
-  fetchChannelOverview,
-  fetchVideoStats,
-  type VideoStats,
-} from "@/lib/youtube-analytics";
+import { extractYoutubeVideoId, fetchChannelOverview, fetchVideoStats } from "@/lib/youtube-analytics";
 import { disconnectYoutubeChannel } from "@/app/youtube/youtube-auth-actions";
+import type { StatEntry } from "@/lib/types";
 import {
   createYoutubeVideo,
   deleteYoutubeVideo,
@@ -35,22 +31,38 @@ export default async function YoutubePage({
   });
 
   const channel = await getConnectedChannel();
-  const videoStats: Record<string, VideoStats> = {};
-  let channelOverview = null;
+  const itemStats: Record<string, StatEntry[]> = {};
+  let overview: StatEntry[] | null = null;
 
   if (channel) {
     const published = videos.filter((v) => v.status === "PUBLISHED" && extractYoutubeVideoId(v.url));
-    const [, overview] = await Promise.all([
+    const [, channelOverview] = await Promise.all([
       Promise.all(
         published.map(async (v) => {
           const ytId = extractYoutubeVideoId(v.url)!;
           const stats = await fetchVideoStats(ytId);
-          if (stats) videoStats[v.id] = stats;
+          if (stats) {
+            itemStats[v.id] = [
+              { label: "views", value: stats.views.toLocaleString() },
+              { label: "minutes watched", value: Math.round(stats.estimatedMinutesWatched).toLocaleString() },
+              { label: "likes", value: stats.likes.toLocaleString() },
+              { label: "comments", value: stats.comments.toLocaleString() },
+            ];
+          }
         })
       ),
       fetchChannelOverview(),
     ]);
-    channelOverview = overview;
+    if (channelOverview) {
+      const net = channelOverview.subscribersGained - channelOverview.subscribersLost;
+      overview = [
+        { label: "views", value: channelOverview.views.toLocaleString() },
+        { label: "minutes watched", value: Math.round(channelOverview.estimatedMinutesWatched).toLocaleString() },
+        { label: "likes", value: channelOverview.likes.toLocaleString() },
+        { label: "comments", value: channelOverview.comments.toLocaleString() },
+        { label: "net subscribers", value: `${net >= 0 ? "+" : ""}${net.toLocaleString()}` },
+      ];
+    }
   }
 
   return (
@@ -68,11 +80,13 @@ export default async function YoutubePage({
       onUpdate={updateYoutubeVideo}
       onDelete={deleteYoutubeVideo}
       onStatusChange={updateYoutubeStatus}
-      youtubeChannel={channel ? { title: channel.channelTitle } : null}
-      youtubeConnectUrl={buildAuthUrl()}
-      onDisconnectYoutube={disconnectYoutubeChannel}
-      videoStats={videoStats}
-      channelOverview={channelOverview}
+      connectPlatformLabel="YouTube Studio"
+      connectedAccount={channel ? { title: channel.channelTitle } : null}
+      connectUrl={buildAuthUrl()}
+      onDisconnect={disconnectYoutubeChannel}
+      itemStats={itemStats}
+      overviewTitle="Channel overview — last 30 days"
+      overview={overview}
       connectNotice={youtube_connected ? "connected" : youtube_error ? `error:${youtube_error}` : undefined}
     />
   );
