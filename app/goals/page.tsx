@@ -9,6 +9,18 @@ import type { GoalEntry } from "@/lib/goals";
 
 export const dynamic = "force-dynamic";
 
+async function recordSnapshotIfNeeded(goalId: string, value: number) {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const existing = await prisma.goalSnapshot.findFirst({
+    where: { goalId, capturedAt: { gte: startOfDay } },
+  });
+  if (!existing) {
+    await prisma.goalSnapshot.create({ data: { goalId, value } });
+  }
+}
+
 export default async function GoalsPage() {
   const rows = await prisma.goal.findMany({ orderBy: { createdAt: "asc" } });
 
@@ -25,16 +37,40 @@ export default async function GoalsPage() {
     needsTiktok ? fetchAccountOverview() : Promise.resolve(null),
   ]);
 
-  const items: GoalEntry[] = rows.map((r) => ({
-    id: r.id,
-    platform: r.platform,
-    label: r.label,
-    target: r.target,
-    manualCurrent: r.manualCurrent,
-    deadline: r.deadline ? r.deadline.toISOString().slice(0, 10) : null,
-    liveCurrent:
-      r.platform === "YOUTUBE" ? liveSubs : r.platform === "TIKTOK" ? liveFollowers?.followerCount ?? null : null,
-  }));
+  const liveByPlatform: Record<string, number | null> = {
+    YOUTUBE: liveSubs,
+    TIKTOK: liveFollowers?.followerCount ?? null,
+  };
+
+  // Capture today's snapshot (once per day) for any goal with a live value.
+  await Promise.all(
+    rows.map((r) => {
+      const live = liveByPlatform[r.platform];
+      if (live == null) return Promise.resolve();
+      return recordSnapshotIfNeeded(r.id, live);
+    })
+  );
+
+  const snapshots = await prisma.goalSnapshot.findMany({
+    where: { goalId: { in: rows.map((r) => r.id) } },
+    orderBy: { capturedAt: "asc" },
+  });
+
+  const items: GoalEntry[] = rows.map((r) => {
+    const liveCurrent = liveByPlatform[r.platform] ?? null;
+    return {
+      id: r.id,
+      platform: r.platform,
+      label: r.label,
+      target: r.target,
+      manualCurrent: r.manualCurrent,
+      deadline: r.deadline ? r.deadline.toISOString().slice(0, 10) : null,
+      liveCurrent,
+      history: snapshots
+        .filter((s) => s.goalId === r.id)
+        .map((s) => ({ value: s.value, at: s.capturedAt.toISOString() })),
+    };
+  });
 
   return <GoalsView items={items} onCreate={createGoal} onUpdate={updateGoal} onDelete={deleteGoal} />;
 }

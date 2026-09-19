@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { GOAL_PLATFORM_LABELS, type GoalEntry } from "@/lib/goals";
+import { computePace, GOAL_PLATFORM_LABELS, type GoalEntry } from "@/lib/goals";
 import { formatCount, fmtDate } from "@/lib/format";
 import GoalDialog from "@/components/GoalDialog";
+import Sparkline from "@/components/Sparkline";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
 import CompassIcon from "@/components/icons/CompassIcon";
@@ -29,6 +30,13 @@ function daysLeft(deadline: string | null): string | null {
   if (days === 0) return "due today";
   return `${days} day${days === 1 ? "" : "s"} left`;
 }
+
+const PACE_COLOR: Record<string, string> = {
+  good: "var(--accent)",
+  warn: "var(--warn)",
+  danger: "var(--danger)",
+  neutral: "var(--muted)",
+};
 
 export default function GoalsView({ items, onCreate, onUpdate, onDelete }: Props) {
   const router = useRouter();
@@ -78,8 +86,9 @@ export default function GoalsView({ items, onCreate, onUpdate, onDelete }: Props
             const current = item.liveCurrent ?? item.manualCurrent;
             const pct = item.target > 0 ? Math.min(100, Math.round((current / item.target) * 100)) : 0;
             const remaining = daysLeft(item.deadline);
+            const pace = computePace(item.history, item.target, item.deadline);
             return (
-              <button className="insp-card" key={item.id} onClick={() => setDialogItem(item)} style={{ gap: 12 }}>
+              <button className="insp-card" key={item.id} onClick={() => setDialogItem(item)} style={{ gap: 10 }}>
                 <div className="insp-card-top">
                   <span className="insp-platform">{platformIcon(item.platform)}</span>
                   <span className="cat">{GOAL_PLATFORM_LABELS[item.platform]}</span>
@@ -88,11 +97,10 @@ export default function GoalsView({ items, onCreate, onUpdate, onDelete }: Props
                 <span className="insp-followers">
                   {formatCount(current)} <span className="cat">/ {formatCount(item.target)}</span>
                 </span>
-                <div className="prog" style={{ width: "100%", height: 8 }}>
-                  <i style={{ width: `${pct}%`, background: "var(--accent)" }} />
-                </div>
+                <Sparkline points={item.history.map((h) => h.value)} target={item.target} width={260} height={44} />
                 <span className="meta" style={{ width: "100%" }}>
                   <span>{pct}% there</span>
+                  <span style={{ color: PACE_COLOR[pace.tone] }}>{pace.label}</span>
                   {item.liveCurrent != null ? <span>live</span> : <span>manual count</span>}
                   {remaining ? <span>{remaining}</span> : null}
                   {item.deadline ? <span>{fmtDate(item.deadline)}</span> : null}
