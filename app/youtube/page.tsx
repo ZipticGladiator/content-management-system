@@ -19,7 +19,10 @@ export default async function YoutubePage({
 }) {
   const { open } = await searchParams;
   const videos = await prisma.youtubeVideo.findMany({
-    include: { script: { select: { id: true } }, _count: { select: { comments: true } } },
+    include: {
+      script: { select: { id: true } },
+      _count: { select: { comments: true, attachments: true } },
+    },
     orderBy: { createdAt: "asc" },
   });
 

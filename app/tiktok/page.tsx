@@ -19,7 +19,10 @@ export default async function TiktokPage({
 }) {
   const { open } = await searchParams;
   const clips = await prisma.tiktokClip.findMany({
-    include: { script: { select: { id: true } }, _count: { select: { comments: true } } },
+    include: {
+      script: { select: { id: true } },
+      _count: { select: { comments: true, attachments: true } },
+    },
     orderBy: { createdAt: "asc" },
   });
 

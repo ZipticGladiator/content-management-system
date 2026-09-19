@@ -14,6 +14,7 @@ import type { ItemKind, PipelineItem, PipelineItemInput } from "@/lib/types";
 import ItemDialog from "@/components/ItemDialog";
 import CommentIcon from "@/components/icons/CommentIcon";
 import CheckIcon from "@/components/icons/CheckIcon";
+import PaperclipIcon from "@/components/icons/PaperclipIcon";
 
 type SortKey = "title" | "status" | "due" | "cost" | "prog";
 
@@ -273,6 +274,11 @@ export default function PipelineBoard({
                             <span title={item.paid ? "Paid" : "Not paid yet"}>
                               {rand(item.cost)}
                               {item.paid ? <span style={{ marginLeft: 4 }}><CheckIcon size={11} /></span> : null}
+                            </span>
+                          ) : null}
+                          {item.attachmentCount ? (
+                            <span className="comment-count">
+                              <PaperclipIcon size={11} /> {item.attachmentCount}
                             </span>
                           ) : null}
                           {item.commentCount ? (

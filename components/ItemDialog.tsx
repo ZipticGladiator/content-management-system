@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CATEGORY_KEYS, CATEGORY_LABELS, type StageDef } from "@/lib/pipeline";
 import type { ItemKind, PipelineItem, PipelineItemInput } from "@/lib/types";
 import CommentsSection from "@/components/CommentsSection";
+import AttachmentsSection from "@/components/AttachmentsSection";
 
 type Props = {
   kind: ItemKind;
@@ -214,6 +215,7 @@ export default function ItemDialog({
         </form>
         {!isNew && initial ? (
           <div className="dlg" style={{ paddingTop: 0 }}>
+            <AttachmentsSection kind={kind} itemId={initial.id} />
             <CommentsSection kind={kind} itemId={initial.id} />
           </div>
         ) : null}

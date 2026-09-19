@@ -2,7 +2,10 @@ import type { YoutubeVideo, TiktokClip } from "@/app/generated/prisma/client";
 import { YOUTUBE_STEPS } from "@/lib/pipeline";
 import type { PipelineItem } from "@/lib/types";
 
-type WithExtras = { script?: { id: string } | null; _count?: { comments: number } };
+type WithExtras = {
+  script?: { id: string } | null;
+  _count?: { comments: number; attachments: number };
+};
 
 export function mapYoutubeVideo(v: YoutubeVideo & WithExtras): PipelineItem {
   const steps: Record<string, boolean> = {};
@@ -25,6 +28,7 @@ export function mapYoutubeVideo(v: YoutubeVideo & WithExtras): PipelineItem {
     steps,
     scriptId: v.script?.id ?? null,
     commentCount: v._count?.comments ?? 0,
+    attachmentCount: v._count?.attachments ?? 0,
   };
 }
 
@@ -44,5 +48,6 @@ export function mapTiktokClip(c: TiktokClip & WithExtras): PipelineItem {
     notes: c.notes,
     scriptId: c.script?.id ?? null,
     commentCount: c._count?.comments ?? 0,
+    attachmentCount: c._count?.attachments ?? 0,
   };
 }

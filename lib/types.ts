@@ -18,13 +18,24 @@ export type PipelineItem = {
   steps?: Record<string, boolean>;
   scriptId?: string | null;
   commentCount?: number;
+  attachmentCount?: number;
 };
 
-export type PipelineItemInput = Omit<PipelineItem, "id" | "scriptId" | "commentCount">;
+export type PipelineItemInput = Omit<
+  PipelineItem,
+  "id" | "scriptId" | "commentCount" | "attachmentCount"
+>;
 
 export type CommentEntry = {
   id: string;
   author: string;
   body: string;
+  createdAt: string;
+};
+
+export type AttachmentEntry = {
+  id: string;
+  label: string;
+  url: string;
   createdAt: string;
 };

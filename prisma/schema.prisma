@@ -13,11 +13,9 @@ datasource db {
 }
 
 enum Category {
-  SEQUELS
-  DEVSECOPS_CLOUD
-  HANDS_ON
-  COMMUNITY
-  SA_INDUSTRY
+  EDUCATIONAL
+  TECHNICAL
+  LIFESTYLE
 }
 
 enum YoutubeStatus {
@@ -46,7 +44,7 @@ model YoutubeVideo {
   id        String        @id @default(cuid())
   title     String
   pitch     String        @default("")
-  category  Category      @default(SEQUELS)
+  category  Category      @default(EDUCATIONAL)
   status    YoutubeStatus @default(IDEA)
   dueDate   DateTime?
   cost      Int           @default(0)
@@ -61,26 +59,28 @@ model YoutubeVideo {
   stepThumbnail Boolean @default(false)
   stepUpload    Boolean @default(false)
 
-  notes     String   @default("")
-  script    Script?
-  comments  Comment[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  notes       String   @default("")
+  script      Script?
+  comments    Comment[]
+  attachments Attachment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model TiktokClip {
-  id        String       @id @default(cuid())
-  title     String
-  pitch     String       @default("")
-  category  Category     @default(SEQUELS)
-  status    TiktokStatus @default(IDEA)
-  dueDate   DateTime?
-  url       String       @default("")
-  notes     String       @default("")
-  script    Script?
-  comments  Comment[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id          String       @id @default(cuid())
+  title       String
+  pitch       String       @default("")
+  category    Category     @default(EDUCATIONAL)
+  status      TiktokStatus @default(IDEA)
+  dueDate     DateTime?
+  url         String       @default("")
+  notes       String       @default("")
+  script      Script?
+  comments    Comment[]
+  attachments Attachment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model Script {
@@ -102,6 +102,23 @@ model Comment {
   id     String @id @default(cuid())
   author String
   body   String
+
+  youtubeVideoId String?       @map("youtube_video_id")
+  youtubeVideo   YoutubeVideo? @relation(fields: [youtubeVideoId], references: [id], onDelete: Cascade)
+
+  tiktokClipId String?     @map("tiktok_clip_id")
+  tiktokClip   TiktokClip? @relation(fields: [tiktokClipId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([youtubeVideoId])
+  @@index([tiktokClipId])
+}
+
+model Attachment {
+  id    String @id @default(cuid())
+  label String @default("")
+  url   String
 
   youtubeVideoId String?       @map("youtube_video_id")
   youtubeVideo   YoutubeVideo? @relation(fields: [youtubeVideoId], references: [id], onDelete: Cascade)

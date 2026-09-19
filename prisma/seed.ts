@@ -5,11 +5,11 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 const CATEGORY_MAP: Record<string, Category> = {
-  Sequels: Category.SEQUELS,
-  "DevSecOps & cloud": Category.DEVSECOPS_CLOUD,
-  "Hands-on": Category.HANDS_ON,
-  Community: Category.COMMUNITY,
-  "SA & industry": Category.SA_INDUSTRY,
+  Sequels: Category.EDUCATIONAL,
+  "DevSecOps & cloud": Category.TECHNICAL,
+  "Hands-on": Category.TECHNICAL,
+  Community: Category.LIFESTYLE,
+  "SA & industry": Category.EDUCATIONAL,
 };
 
 const ideas = [

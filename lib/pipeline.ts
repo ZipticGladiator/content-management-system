@@ -1,9 +1,7 @@
 export const CATEGORY_LABELS = {
-  SEQUELS: "Sequels",
-  DEVSECOPS_CLOUD: "DevSecOps & cloud",
-  HANDS_ON: "Hands-on",
-  COMMUNITY: "Community",
-  SA_INDUSTRY: "SA & industry",
+  EDUCATIONAL: "Educational",
+  TECHNICAL: "Technical",
+  LIFESTYLE: "Lifestyle",
 } as const;
 
 export type CategoryKey = keyof typeof CATEGORY_LABELS;

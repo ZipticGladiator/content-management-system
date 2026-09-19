@@ -37,8 +37,8 @@ const STEPS: Step[] = [
     icon: <DocumentIcon size={32} />,
   },
   {
-    title: "Comments & paid tracking",
-    body: "Leave updates or questions on any video or clip — like a running conversation thread, visible to everyone with access. YouTube videos also get a Paid checkbox once the editor's been paid, tallied automatically in the budget stat up top.",
+    title: "Comments, files & paid tracking",
+    body: "Leave updates or questions on any video or clip — like a running conversation thread — and attach thumbnails or reference files alongside them. YouTube videos also get a Paid checkbox once the editor's been paid, tallied automatically in the budget stat up top.",
     icon: <CommentIcon size={30} />,
   },
   {
