@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { CATEGORY_LABELS } from "@/lib/pipeline";
 import { rand, fmtDate } from "@/lib/format";
 import type { AnalyticsSummary, WeekBucket } from "@/lib/analytics";
-import CompassIcon from "@/components/icons/CompassIcon";
+import ChartIcon from "@/components/icons/ChartIcon";
 
 // Validated via the dataviz skill's palette validator against this app's
 // #050505 dark surface (node scripts/validate_palette.js) — do not tweak
@@ -132,7 +132,7 @@ export default function AnalyticsView({ summary }: { summary: AnalyticsSummary }
       <header className="page-header">
         <div className="page-title">
           <span className="page-icon">
-            <CompassIcon size={36} />
+            <ChartIcon size={36} />
           </span>
           <div>
             <h1>Analytics</h1>

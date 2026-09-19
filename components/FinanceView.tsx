@@ -7,7 +7,7 @@ import type { EditorEntry, FinanceSummary } from "@/lib/finance";
 import EditorDialog from "@/components/EditorDialog";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
-import CompassIcon from "@/components/icons/CompassIcon";
+import WalletIcon from "@/components/icons/WalletIcon";
 import type { EditorInput } from "@/app/finance/actions";
 import type { UnpaidItem } from "@/lib/finance";
 
@@ -63,7 +63,7 @@ export default function FinanceView({ summary, editors, onCreate, onUpdate, onDe
       <header className="page-header">
         <div className="page-title">
           <span className="page-icon">
-            <CompassIcon size={36} />
+            <WalletIcon size={36} />
           </span>
           <div>
             <h1>Finance</h1>

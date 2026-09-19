@@ -10,6 +10,9 @@ import CheckIcon from "@/components/icons/CheckIcon";
 import CompassIcon from "@/components/icons/CompassIcon";
 import CalendarIcon from "@/components/icons/CalendarIcon";
 import BellIcon from "@/components/icons/BellIcon";
+import LightbulbIcon from "@/components/icons/LightbulbIcon";
+import ChartIcon from "@/components/icons/ChartIcon";
+import WalletIcon from "@/components/icons/WalletIcon";
 
 const ONBOARD_KEY = "cms-onboarded";
 const OPEN_EVENT = "cms-open-onboarding";
@@ -60,12 +63,12 @@ const STEPS: Step[] = [
   {
     title: "Inspiration & Goals",
     body: "Track other channels here — competitors and creators worth learning from — with their follower count and a note on what makes them worth watching. Scroll down on the same page for subscriber/follower targets per platform, live-updating once connected.",
-    icon: <CompassIcon size={30} />,
+    icon: <LightbulbIcon size={30} />,
   },
   {
     title: "Analytics",
     body: "A dashboard view of how the channel's actually performing — output cadence, growth, spend, and how long an idea takes to become a published video, with charts to spot trends at a glance.",
-    icon: <CheckIcon size={30} />,
+    icon: <ChartIcon size={30} />,
   },
   {
     title: "Notifications",
@@ -75,7 +78,7 @@ const STEPS: Step[] = [
   {
     title: "Finance",
     body: "See forecasted vs. paid spend across both platforms and by editor, plus a directory of editor rates and payment details for when it's time to pay out.",
-    icon: <DocumentIcon size={28} />,
+    icon: <WalletIcon size={28} />,
   },
   {
     title: "You're all set",

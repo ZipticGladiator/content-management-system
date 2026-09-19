@@ -8,6 +8,7 @@ import InspirationDialog from "@/components/InspirationDialog";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
 import CompassIcon from "@/components/icons/CompassIcon";
+import LightbulbIcon from "@/components/icons/LightbulbIcon";
 import type { InspirationInput } from "@/app/inspiration/actions";
 
 type Props = {
@@ -65,7 +66,7 @@ export default function InspirationGrid({ items, onCreate, onUpdate, onDelete }:
       <header className="page-header">
         <div className="page-title">
           <span className="page-icon">
-            <CompassIcon size={36} />
+            <LightbulbIcon size={36} />
           </span>
           <div>
             <h1>Inspiration</h1>
