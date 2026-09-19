@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   CATEGORY_KEYS,
@@ -83,6 +83,31 @@ export default function PipelineBoard({
     () => (initialOpenId ? items.find((i) => i.id === initialOpenId) ?? null : null)
   );
 
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+  const syncingRef = useRef<"top" | "board" | null>(null);
+  const [boardWidth, setBoardWidth] = useState(0);
+
+  function handleTopScroll() {
+    if (syncingRef.current === "board") {
+      syncingRef.current = null;
+      return;
+    }
+    if (!topScrollRef.current || !boardRef.current) return;
+    syncingRef.current = "top";
+    boardRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+  }
+
+  function handleBoardScroll() {
+    if (syncingRef.current === "top") {
+      syncingRef.current = null;
+      return;
+    }
+    if (!topScrollRef.current || !boardRef.current) return;
+    syncingRef.current = "board";
+    topScrollRef.current.scrollLeft = boardRef.current.scrollLeft;
+  }
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((i) => {
@@ -92,6 +117,16 @@ export default function PipelineBoard({
       return matchesCat && matchesQ;
     });
   }, [items, category, query]);
+
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board || view !== "board") return;
+    const measure = () => setBoardWidth(board.scrollWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(board);
+    return () => observer.disconnect();
+  }, [view, filtered.length]);
 
   const total = items.length;
   const publishedKey = stages[stages.length - 1][0];
@@ -289,7 +324,18 @@ export default function PipelineBoard({
       </div>
 
       {view === "board" ? (
-        <div className="board" style={{ ["--cols" as string]: stages.length }}>
+        <div className="board-topscroll" ref={topScrollRef} onScroll={handleTopScroll}>
+          <div style={{ width: boardWidth, height: 1 }} />
+        </div>
+      ) : null}
+
+      {view === "board" ? (
+        <div
+          className="board"
+          ref={boardRef}
+          onScroll={handleBoardScroll}
+          style={{ ["--cols" as string]: stages.length }}
+        >
           {stages.map((s) => {
             const colItems = filtered
               .filter((i) => i.status === s[0])

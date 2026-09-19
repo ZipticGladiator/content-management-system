@@ -377,6 +377,12 @@ button {
   outline-offset: 2px;
 }
 
+.board-topscroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 16px;
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(var(--cols, 6), minmax(220px, 1fr));
