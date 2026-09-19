@@ -1,6 +1,7 @@
 export type EditorEntry = {
   id: string;
   name: string;
+  email: string;
   rate: number;
   rateUnit: string;
   bankName: string;

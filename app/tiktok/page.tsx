@@ -22,13 +22,16 @@ export default async function TiktokPage({
   searchParams: Promise<{ open?: string; tiktok_connected?: string; tiktok_error?: string }>;
 }) {
   const { open, tiktok_connected, tiktok_error } = await searchParams;
-  const clips = await prisma.tiktokClip.findMany({
-    include: {
-      script: { select: { id: true } },
-      _count: { select: { comments: true, attachments: true } },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  const [clips, editors] = await Promise.all([
+    prisma.tiktokClip.findMany({
+      include: {
+        script: { select: { id: true } },
+        _count: { select: { comments: true, attachments: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.editor.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+  ]);
 
   const account = await getConnectedAccount();
   const itemStats: Record<string, StatEntry[]> = {};
@@ -82,6 +85,7 @@ export default async function TiktokPage({
       connectUrl={buildAuthUrl()}
       onDisconnect={disconnectTiktokAccount}
       itemStats={itemStats}
+      editorOptions={editors.map((e) => e.name)}
       overviewTitle="Account overview (current totals)"
       overview={overview}
       connectNotice={tiktok_connected ? "connected" : tiktok_error ? `error:${tiktok_error}` : undefined}

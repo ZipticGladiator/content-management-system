@@ -14,6 +14,7 @@ type Props = {
 export default function EditorDialog({ initial, onClose, onSave, onDelete }: Props) {
   const isNew = !initial;
   const [name, setName] = useState(initial?.name ?? "");
+  const [email, setEmail] = useState(initial?.email ?? "");
   const [rate, setRate] = useState(initial?.rate ?? 0);
   const [rateUnit, setRateUnit] = useState(initial?.rateUnit ?? "per video");
   const [bankName, setBankName] = useState(initial?.bankName ?? "");
@@ -31,6 +32,7 @@ export default function EditorDialog({ initial, onClose, onSave, onDelete }: Pro
     try {
       await onSave({
         name: name.trim() || "Untitled editor",
+        email: email.trim(),
         rate: Math.max(0, Number(rate) || 0),
         rateUnit: rateUnit.trim() || "per video",
         bankName: bankName.trim(),
@@ -66,6 +68,10 @@ export default function EditorDialog({ initial, onClose, onSave, onDelete }: Pro
             <label className="f full">
               Name
               <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
+            </label>
+            <label className="f full">
+              Email
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="editor@example.com" />
             </label>
             <label className="f">
               Rate (R)

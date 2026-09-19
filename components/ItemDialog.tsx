@@ -14,6 +14,7 @@ type Props = {
   showTopPick?: boolean;
   stats?: StatEntry[];
   statsLabel?: string;
+  editorOptions?: string[];
   initial: PipelineItem | null;
   onClose: () => void;
   onSave: (data: PipelineItemInput) => Promise<void>;
@@ -28,6 +29,7 @@ export default function ItemDialog({
   showTopPick = true,
   stats,
   statsLabel = "Live stats",
+  editorOptions = [],
   initial,
   onClose,
   onSave,
@@ -137,7 +139,16 @@ export default function ItemDialog({
                 </label>
                 <label className="f">
                   Editor
-                  <input value={editor} onChange={(e) => setEditor(e.target.value)} placeholder="Who is editing?" />
+                  <select value={editor} onChange={(e) => setEditor(e.target.value)}>
+                    <option value="">None</option>
+                    {[...new Set([...editorOptions, ...(editor ? [editor] : [])])]
+                      .sort((a, b) => a.localeCompare(b))
+                      .map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                  </select>
                 </label>
                 <div className="f full">
                   <div className="checks">

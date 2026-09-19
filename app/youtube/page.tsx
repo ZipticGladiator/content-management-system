@@ -22,13 +22,16 @@ export default async function YoutubePage({
   searchParams: Promise<{ open?: string; youtube_connected?: string; youtube_error?: string }>;
 }) {
   const { open, youtube_connected, youtube_error } = await searchParams;
-  const videos = await prisma.youtubeVideo.findMany({
-    include: {
-      script: { select: { id: true } },
-      _count: { select: { comments: true, attachments: true } },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  const [videos, editors] = await Promise.all([
+    prisma.youtubeVideo.findMany({
+      include: {
+        script: { select: { id: true } },
+        _count: { select: { comments: true, attachments: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.editor.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+  ]);
 
   const channel = await getConnectedChannel();
   const itemStats: Record<string, StatEntry[]> = {};
@@ -85,6 +88,7 @@ export default async function YoutubePage({
       connectUrl={buildAuthUrl()}
       onDisconnect={disconnectYoutubeChannel}
       itemStats={itemStats}
+      editorOptions={editors.map((e) => e.name)}
       overviewTitle="Channel overview — last 30 days"
       overview={overview}
       connectNotice={youtube_connected ? "connected" : youtube_error ? `error:${youtube_error}` : undefined}

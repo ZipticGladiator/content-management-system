@@ -146,6 +146,7 @@ export default function FinanceView({ summary, editors, onCreate, onUpdate, onDe
           {editors.map((e) => (
             <button className="insp-card" key={e.id} onClick={() => setDialogItem(e)}>
               <span className="insp-name">{e.name}</span>
+              {e.email ? <span className="cat">{e.email}</span> : null}
               <span className="insp-followers">
                 {rand(e.rate)} <span className="cat">{e.rateUnit}</span>
               </span>

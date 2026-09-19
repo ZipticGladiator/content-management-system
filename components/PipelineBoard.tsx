@@ -39,6 +39,7 @@ type Props = {
   connectUrl?: string;
   onDisconnect?: () => Promise<void>;
   itemStats?: Record<string, StatEntry[]>;
+  editorOptions?: string[];
   overviewTitle?: string;
   overview?: StatEntry[] | null;
   connectNotice?: string;
@@ -75,6 +76,7 @@ export default function PipelineBoard({
   connectUrl,
   onDisconnect,
   itemStats,
+  editorOptions,
   overviewTitle = "Account overview",
   overview,
   connectNotice,
@@ -558,6 +560,7 @@ export default function PipelineBoard({
           showTopPick={showTopPick}
           stats={dialogItem !== "new" ? itemStats?.[dialogItem.id] : undefined}
           statsLabel={`${connectPlatformLabel} stats`}
+          editorOptions={editorOptions}
           initial={dialogItem === "new" ? null : dialogItem}
           onClose={closeDialog}
           onSave={handleSave}

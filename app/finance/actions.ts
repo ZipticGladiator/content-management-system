@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export type EditorInput = {
   name: string;
+  email: string;
   rate: number;
   rateUnit: string;
   bankName: string;

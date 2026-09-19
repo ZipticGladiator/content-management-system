@@ -212,6 +212,7 @@ model GoalSnapshot {
 model Editor {
   id            String   @id @default(cuid())
   name          String
+  email         String   @default("")
   rate          Int      @default(0)
   rateUnit      String   @default("per video")
   bankName      String   @default("")

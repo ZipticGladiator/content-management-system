@@ -54,6 +54,7 @@ export default async function FinancePage() {
   const editors: EditorEntry[] = editorRows.map((e) => ({
     id: e.id,
     name: e.name,
+    email: e.email,
     rate: e.rate,
     rateUnit: e.rateUnit,
     bankName: e.bankName,
