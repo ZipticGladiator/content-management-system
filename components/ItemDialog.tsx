@@ -20,7 +20,6 @@ type Props = {
   onSave: (data: PipelineItemInput) => Promise<void>;
   onDelete?: () => Promise<void>;
   onDuplicate?: () => Promise<void>;
-  onPublishNow?: () => Promise<void>;
 };
 
 export default function ItemDialog({
@@ -37,10 +36,8 @@ export default function ItemDialog({
   onSave,
   onDelete,
   onDuplicate,
-  onPublishNow,
 }: Props) {
   const isNew = !initial;
-  const [publishing, setPublishing] = useState(false);
   const [title, setTitle] = useState(initial?.title ?? "");
   const [pitch, setPitch] = useState(initial?.pitch ?? "");
   const [category, setCategory] = useState<string>(initial?.category ?? CATEGORY_KEYS[0]);
@@ -100,16 +97,6 @@ export default function ItemDialog({
       await onDuplicate();
     } finally {
       setDuplicating(false);
-    }
-  }
-
-  async function handlePublishNow() {
-    if (!onPublishNow) return;
-    setPublishing(true);
-    try {
-      await onPublishNow();
-    } finally {
-      setPublishing(false);
     }
   }
 
@@ -243,11 +230,6 @@ export default function ItemDialog({
             {!isNew && onDuplicate ? (
               <button type="button" className="btn" onClick={handleDuplicate} disabled={duplicating}>
                 {duplicating ? "Duplicating…" : "Duplicate"}
-              </button>
-            ) : null}
-            {!isNew && onPublishNow && kind === "youtube" && status === "PUBLISHED" ? (
-              <button type="button" className="btn" onClick={handlePublishNow} disabled={publishing}>
-                {publishing ? "Setting to Public…" : "Set to Public"}
               </button>
             ) : null}
             {url ? (

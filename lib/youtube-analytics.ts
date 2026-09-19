@@ -95,36 +95,6 @@ export async function fetchChannelOverview(): Promise<ChannelOverview | null> {
   return { views, estimatedMinutesWatched, likes, comments, subscribersGained, subscribersLost };
 }
 
-export type PrivacyResult = { ok: true } | { ok: false; reason: string };
-
-/**
- * Sets a video's privacy status via the Data API — used to flip a video
- * Public the moment it's marked Published, without the CMS ever handling
- * the video file itself (it must already be uploaded, e.g. as Unlisted).
- */
-export async function setVideoPrivacy(
-  videoId: string,
-  privacyStatus: "public" | "unlisted" | "private"
-): Promise<PrivacyResult> {
-  const accessToken = await getValidAccessToken();
-  if (!accessToken) return { ok: false, reason: "YouTube isn't connected" };
-
-  const res = await fetch("https://www.googleapis.com/youtube/v3/videos?part=status", {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ id: videoId, status: { privacyStatus } }),
-  });
-
-  if (res.ok) return { ok: true };
-
-  const body = await res.json().catch(() => null);
-  const reason: string = body?.error?.message || `YouTube API returned ${res.status}`;
-  return { ok: false, reason };
-}
-
 /**
  * Fetches the channel's top videos by lifetime views in a single call, most
  * viewed first. Returns null if not connected or the call fails.

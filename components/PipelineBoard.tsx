@@ -34,7 +34,6 @@ type Props = {
   onUpdate: (id: string, data: PipelineItemInput) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onDuplicate?: (id: string) => Promise<void>;
-  onPublishNow?: (id: string) => Promise<void>;
   onStatusChange: (id: string, status: string) => Promise<void>;
   connectPlatformLabel?: string;
   connectedAccount?: { title: string | null } | null;
@@ -73,7 +72,6 @@ export default function PipelineBoard({
   onUpdate,
   onDelete,
   onDuplicate,
-  onPublishNow,
   onStatusChange,
   connectPlatformLabel = "the platform",
   connectedAccount,
@@ -302,13 +300,6 @@ export default function PipelineBoard({
     if (dialogItem && dialogItem !== "new" && onDuplicate) {
       await onDuplicate(dialogItem.id);
       closeDialog();
-      router.refresh();
-    }
-  }
-
-  async function handlePublishNow() {
-    if (dialogItem && dialogItem !== "new" && onPublishNow) {
-      await onPublishNow(dialogItem.id);
       router.refresh();
     }
   }
@@ -654,7 +645,6 @@ export default function PipelineBoard({
           onSave={handleSave}
           onDelete={dialogItem !== "new" ? handleDelete : undefined}
           onDuplicate={dialogItem !== "new" && onDuplicate ? handleDuplicate : undefined}
-          onPublishNow={dialogItem !== "new" && onPublishNow ? handlePublishNow : undefined}
         />
       ) : null}
 

@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { Category, YoutubeStatus } from "@/app/generated/prisma/client";
 import { YOUTUBE_STAGES, YOUTUBE_STEPS, stageLabel } from "@/lib/pipeline";
 import { addSystemComment } from "@/app/comments/actions";
-import { extractYoutubeVideoId, setVideoPrivacy } from "@/lib/youtube-analytics";
 import type { PipelineItemInput } from "@/lib/types";
 
 function toData(data: PipelineItemInput) {
@@ -38,32 +37,6 @@ async function logStatusChange(id: string, from: string, to: string) {
   );
 }
 
-async function attemptPublish(id: string, url: string) {
-  const videoId = extractYoutubeVideoId(url);
-  if (!videoId) {
-    await addSystemComment(
-      "youtube",
-      id,
-      'Marked Published, but no video link is set — add the YouTube URL, then use "Set to Public" to finish.'
-    );
-    return;
-  }
-  const result = await setVideoPrivacy(videoId, "public");
-  await addSystemComment(
-    "youtube",
-    id,
-    result.ok ? "Set to Public on YouTube." : `Couldn't set to Public on YouTube — ${result.reason}`
-  );
-}
-
-/** Manual retry for the ItemDialog's "Set to Public" button. */
-export async function publishYoutubeVideoNow(id: string) {
-  const v = await prisma.youtubeVideo.findUnique({ where: { id }, select: { url: true } });
-  if (!v) return;
-  await attemptPublish(id, v.url);
-  revalidatePath("/youtube");
-}
-
 export async function createYoutubeVideo(data: PipelineItemInput) {
   await prisma.youtubeVideo.create({ data: toData(data) });
   revalidatePath("/youtube");
@@ -77,12 +50,7 @@ export async function updateYoutubeVideo(id: string, data: PipelineItemInput) {
     for (const [key] of YOUTUBE_STEPS) doneSteps[key] = true;
   }
   await prisma.youtubeVideo.update({ where: { id }, data: { ...payload, ...doneSteps } });
-  if (existing) {
-    await logStatusChange(id, existing.status, payload.status);
-    if (existing.status !== YoutubeStatus.PUBLISHED && payload.status === YoutubeStatus.PUBLISHED) {
-      await attemptPublish(id, payload.url);
-    }
-  }
+  if (existing) await logStatusChange(id, existing.status, payload.status);
   revalidatePath("/youtube");
 }
 
@@ -110,17 +78,12 @@ export async function duplicateYoutubeVideo(id: string) {
 }
 
 export async function updateYoutubeStatus(id: string, status: string) {
-  const existing = await prisma.youtubeVideo.findUnique({ where: { id }, select: { status: true, url: true } });
+  const existing = await prisma.youtubeVideo.findUnique({ where: { id }, select: { status: true } });
   const data: Record<string, unknown> = { status: status as YoutubeStatus };
   if (status === YoutubeStatus.PUBLISHED) {
     for (const [key] of YOUTUBE_STEPS) data[key] = true;
   }
   await prisma.youtubeVideo.update({ where: { id }, data });
-  if (existing) {
-    await logStatusChange(id, existing.status, status);
-    if (existing.status !== YoutubeStatus.PUBLISHED && status === YoutubeStatus.PUBLISHED) {
-      await attemptPublish(id, existing.url);
-    }
-  }
+  if (existing) await logStatusChange(id, existing.status, status);
   revalidatePath("/youtube");
 }

@@ -3,9 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/yt-analytics.readonly",
-  // Broader than youtube.readonly on purpose — needed to flip a video's
-  // privacy status to Public when it moves to the Published stage.
-  "https://www.googleapis.com/auth/youtube",
+  "https://www.googleapis.com/auth/youtube.readonly",
 ].join(" ");
 
 function redirectUri(): string {
