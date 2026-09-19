@@ -14,12 +14,13 @@ export const dynamic = "force-dynamic";
 
 export default async function TiktokPage() {
   const clips = await prisma.tiktokClip.findMany({
-    include: { script: { select: { id: true } } },
+    include: { script: { select: { id: true } }, _count: { select: { comments: true } } },
     orderBy: { createdAt: "asc" },
   });
 
   return (
     <PipelineBoard
+      kind="tiktok"
       title="TikTok pipeline"
       subtitle="Siya | Cybersecurity — short-form clips, idea to posted"
       icon={<TikTokIcon size={36} />}

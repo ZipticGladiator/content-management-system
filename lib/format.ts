@@ -14,6 +14,19 @@ export function toDateInputValue(d: Date | string | null): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function timeAgo(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const seconds = Math.round((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return fmtDate(date);
+}
+
 export function isLate(dueDate: Date | string | null, isDone: boolean): boolean {
   if (!dueDate || isDone) return false;
   const date = typeof dueDate === "string" ? new Date(dueDate) : dueDate;

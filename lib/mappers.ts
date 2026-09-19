@@ -2,7 +2,9 @@ import type { YoutubeVideo, TiktokClip } from "@/app/generated/prisma/client";
 import { YOUTUBE_STEPS } from "@/lib/pipeline";
 import type { PipelineItem } from "@/lib/types";
 
-export function mapYoutubeVideo(v: YoutubeVideo & { script?: { id: string } | null }): PipelineItem {
+type WithExtras = { script?: { id: string } | null; _count?: { comments: number } };
+
+export function mapYoutubeVideo(v: YoutubeVideo & WithExtras): PipelineItem {
   const steps: Record<string, boolean> = {};
   for (const [key] of YOUTUBE_STEPS) {
     steps[key] = (v as unknown as Record<string, boolean>)[key];
@@ -15,16 +17,18 @@ export function mapYoutubeVideo(v: YoutubeVideo & { script?: { id: string } | nu
     status: v.status,
     dueDate: v.dueDate ? v.dueDate.toISOString().slice(0, 10) : null,
     cost: v.cost,
+    paid: v.paid,
     editor: v.editor,
     url: v.url,
     topPick: v.topPick,
     notes: v.notes,
     steps,
     scriptId: v.script?.id ?? null,
+    commentCount: v._count?.comments ?? 0,
   };
 }
 
-export function mapTiktokClip(c: TiktokClip & { script?: { id: string } | null }): PipelineItem {
+export function mapTiktokClip(c: TiktokClip & WithExtras): PipelineItem {
   return {
     id: c.id,
     title: c.title,
@@ -33,10 +37,12 @@ export function mapTiktokClip(c: TiktokClip & { script?: { id: string } | null }
     status: c.status,
     dueDate: c.dueDate ? c.dueDate.toISOString().slice(0, 10) : null,
     cost: 0,
+    paid: false,
     editor: "",
     url: c.url,
     topPick: false,
     notes: c.notes,
     scriptId: c.script?.id ?? null,
+    commentCount: c._count?.comments ?? 0,
   };
 }

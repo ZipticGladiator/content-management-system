@@ -14,12 +14,13 @@ export const dynamic = "force-dynamic";
 
 export default async function YoutubePage() {
   const videos = await prisma.youtubeVideo.findMany({
-    include: { script: { select: { id: true } } },
+    include: { script: { select: { id: true } }, _count: { select: { comments: true } } },
     orderBy: { createdAt: "asc" },
   });
 
   return (
     <PipelineBoard
+      kind="youtube"
       title="YouTube pipeline"
       subtitle="Siya | Cybersecurity — long-form videos, idea to published"
       icon={<YouTubeIcon size={36} />}

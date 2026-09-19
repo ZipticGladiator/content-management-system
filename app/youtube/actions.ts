@@ -18,6 +18,7 @@ function toData(data: PipelineItemInput) {
     status: data.status as YoutubeStatus,
     dueDate: data.dueDate ? new Date(data.dueDate) : null,
     cost: data.cost,
+    paid: data.paid,
     editor: data.editor,
     url: data.url,
     topPick: data.topPick,

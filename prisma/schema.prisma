@@ -50,6 +50,7 @@ model YoutubeVideo {
   status    YoutubeStatus @default(IDEA)
   dueDate   DateTime?
   cost      Int           @default(0)
+  paid      Boolean       @default(false)
   editor    String        @default("")
   url       String        @default("")
   topPick   Boolean       @default(false)
@@ -62,6 +63,7 @@ model YoutubeVideo {
 
   notes     String   @default("")
   script    Script?
+  comments  Comment[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -76,6 +78,7 @@ model TiktokClip {
   url       String       @default("")
   notes     String       @default("")
   script    Script?
+  comments  Comment[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 }
@@ -93,4 +96,21 @@ model Script {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id     String @id @default(cuid())
+  author String
+  body   String
+
+  youtubeVideoId String?       @map("youtube_video_id")
+  youtubeVideo   YoutubeVideo? @relation(fields: [youtubeVideoId], references: [id], onDelete: Cascade)
+
+  tiktokClipId String?     @map("tiktok_clip_id")
+  tiktokClip   TiktokClip? @relation(fields: [tiktokClipId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([youtubeVideoId])
+  @@index([tiktokClipId])
 }

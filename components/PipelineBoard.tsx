@@ -10,12 +10,15 @@ import {
   type StageDef,
 } from "@/lib/pipeline";
 import { fmtDate, isLate, rand } from "@/lib/format";
-import type { PipelineItem, PipelineItemInput } from "@/lib/types";
+import type { ItemKind, PipelineItem, PipelineItemInput } from "@/lib/types";
 import ItemDialog from "@/components/ItemDialog";
+import CommentIcon from "@/components/icons/CommentIcon";
+import CheckIcon from "@/components/icons/CheckIcon";
 
 type SortKey = "title" | "status" | "due" | "cost" | "prog";
 
 type Props = {
+  kind: ItemKind;
   title: string;
   subtitle: string;
   icon?: ReactNode;
@@ -42,6 +45,7 @@ function pct(item: PipelineItem, stages: readonly StageDef[]) {
 }
 
 export default function PipelineBoard({
+  kind,
   title,
   subtitle,
   icon,
@@ -79,7 +83,7 @@ export default function PipelineBoard({
   const inProgress = items.filter((i) => i.status !== stages[0][0] && i.status !== publishedKey).length;
   const overdue = items.filter((i) => isLate(i.dueDate, i.status === publishedKey)).length;
   const budget = items.reduce((a, i) => a + i.cost, 0);
-  const spent = items.filter((i) => i.status === publishedKey).reduce((a, i) => a + i.cost, 0);
+  const spent = items.filter((i) => i.paid).reduce((a, i) => a + i.cost, 0);
 
   function closeDialog() {
     setDialogItem(null);
@@ -170,7 +174,7 @@ export default function PipelineBoard({
         {showCostAndEditor ? (
           <div className="stat">
             <b>{rand(budget)}</b>
-            <span>editing budget, {rand(spent)} on published</span>
+            <span>editing budget, {rand(spent)} paid</span>
           </div>
         ) : null}
       </div>
@@ -261,7 +265,17 @@ export default function PipelineBoard({
                           {item.dueDate ? (
                             <span className={late ? "late" : ""}>Due {fmtDate(item.dueDate)}</span>
                           ) : null}
-                          {item.cost ? <span>{rand(item.cost)}</span> : null}
+                          {item.cost ? (
+                            <span title={item.paid ? "Paid" : "Not paid yet"}>
+                              {rand(item.cost)}
+                              {item.paid ? <span style={{ marginLeft: 4 }}><CheckIcon size={11} /></span> : null}
+                            </span>
+                          ) : null}
+                          {item.commentCount ? (
+                            <span className="comment-count">
+                              <CommentIcon size={11} /> {item.commentCount}
+                            </span>
+                          ) : null}
                         </span>
                         <span className="prog">
                           <i style={{ width: `${p}%` }} />
@@ -294,6 +308,7 @@ export default function PipelineBoard({
 
       {dialogItem ? (
         <ItemDialog
+          kind={kind}
           stages={stages}
           steps={steps}
           showCostAndEditor={showCostAndEditor}
@@ -414,7 +429,16 @@ function ListView({
                   </div>
                 </td>
                 {showCostAndEditor ? (
-                  <td className="num">{item.cost ? rand(item.cost) : <span className="cat">—</span>}</td>
+                  <td className="num" title={item.cost && item.paid ? "Paid" : item.cost ? "Not paid yet" : undefined}>
+                    {item.cost ? (
+                      <>
+                        {rand(item.cost)}
+                        {item.paid ? <span style={{ marginLeft: 4 }}><CheckIcon size={12} /></span> : null}
+                      </>
+                    ) : (
+                      <span className="cat">—</span>
+                    )}
+                  </td>
                 ) : null}
                 {showCostAndEditor ? <td>{item.editor || <span className="cat">—</span>}</td> : null}
               </tr>

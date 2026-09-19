@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { CATEGORY_KEYS, CATEGORY_LABELS, type StageDef } from "@/lib/pipeline";
-import type { PipelineItem, PipelineItemInput } from "@/lib/types";
+import type { ItemKind, PipelineItem, PipelineItemInput } from "@/lib/types";
+import CommentsSection from "@/components/CommentsSection";
 
 type Props = {
+  kind: ItemKind;
   stages: readonly StageDef[];
   steps?: readonly (readonly [string, string])[];
   showCostAndEditor?: boolean;
@@ -16,6 +18,7 @@ type Props = {
 };
 
 export default function ItemDialog({
+  kind,
   stages,
   steps,
   showCostAndEditor,
@@ -32,6 +35,7 @@ export default function ItemDialog({
   const [status, setStatus] = useState(initial?.status ?? stages[0][0]);
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? "");
   const [cost, setCost] = useState(initial?.cost ?? 0);
+  const [paid, setPaid] = useState(initial?.paid ?? false);
   const [editor, setEditor] = useState(initial?.editor ?? "");
   const [url, setUrl] = useState(initial?.url ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
@@ -51,6 +55,7 @@ export default function ItemDialog({
         status,
         dueDate: dueDate || null,
         cost: Math.max(0, Number(cost) || 0),
+        paid,
         editor: editor.trim(),
         url: url.trim(),
         notes,
@@ -129,6 +134,14 @@ export default function ItemDialog({
                   Editor
                   <input value={editor} onChange={(e) => setEditor(e.target.value)} placeholder="Who is editing?" />
                 </label>
+                <div className="f full">
+                  <div className="checks">
+                    <label>
+                      <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} />
+                      Paid
+                    </label>
+                  </div>
+                </div>
               </>
             ) : null}
             <label className="f full">
@@ -199,6 +212,11 @@ export default function ItemDialog({
             </button>
           </div>
         </form>
+        {!isNew && initial ? (
+          <div className="dlg" style={{ paddingTop: 0 }}>
+            <CommentsSection kind={kind} itemId={initial.id} />
+          </div>
+        ) : null}
       </div>
     </div>
   );
