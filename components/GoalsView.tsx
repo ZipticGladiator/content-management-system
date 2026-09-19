@@ -8,7 +8,6 @@ import GoalDialog from "@/components/GoalDialog";
 import Sparkline from "@/components/Sparkline";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
-import CompassIcon from "@/components/icons/CompassIcon";
 import type { GoalInput } from "@/app/goals/actions";
 
 type Props = {
@@ -60,20 +59,14 @@ export default function GoalsView({ items, onCreate, onUpdate, onDelete }: Props
   }
 
   return (
-    <div className="wrap">
-      <header className="page-header">
-        <div className="page-title">
-          <span className="page-icon">
-            <CompassIcon size={36} />
-          </span>
-          <div>
-            <h1>Goals</h1>
-            <p className="sub">Subscriber and follower targets — live where the account is connected</p>
-          </div>
+    <section style={{ marginTop: 48, paddingTop: 40, borderTop: "1px solid var(--line)" }}>
+      <div className="bar" style={{ marginBottom: 4 }}>
+        <div>
+          <h2 style={{ fontFamily: "var(--display)", fontSize: 22, margin: 0 }}>Goals</h2>
+          <p className="sub" style={{ margin: "4px 0 0" }}>
+            Subscriber and follower targets — live where the account is connected
+          </p>
         </div>
-      </header>
-
-      <div className="bar">
         <span className="grow" />
         <button className="btn primary" onClick={() => setDialogItem("new")}>
           Add goal
@@ -123,6 +116,6 @@ export default function GoalsView({ items, onCreate, onUpdate, onDelete }: Props
           onDelete={dialogItem !== "new" ? handleDelete : undefined}
         />
       ) : null}
-    </div>
+    </section>
   );
 }

@@ -58,13 +58,13 @@ const STEPS: Step[] = [
     icon: <YouTubeIcon size={30} />,
   },
   {
-    title: "Inspiration",
-    body: "Track other channels here — competitors and creators worth learning from — with their follower count and a note on what makes them worth watching. Sorted biggest first, filterable by type.",
+    title: "Inspiration & Goals",
+    body: "Track other channels here — competitors and creators worth learning from — with their follower count and a note on what makes them worth watching. Scroll down on the same page for subscriber/follower targets per platform, live-updating once connected.",
     icon: <CompassIcon size={30} />,
   },
   {
-    title: "Goals",
-    body: "Set subscriber or follower targets for each platform. Once connected, the current count updates live against your target — no more guessing how close you are.",
+    title: "Analytics",
+    body: "A dashboard view of how the channel's actually performing — output cadence, growth, spend, and how long an idea takes to become a published video, with charts to spot trends at a glance.",
     icon: <CheckIcon size={30} />,
   },
   {

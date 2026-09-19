@@ -61,7 +61,7 @@ export default function InspirationGrid({ items, onCreate, onUpdate, onDelete }:
   const inspirationCount = items.filter((i) => i.type === "INSPIRATION").length;
 
   return (
-    <div className="wrap">
+    <>
       <header className="page-header">
         <div className="page-title">
           <span className="page-icon">
@@ -146,6 +146,6 @@ export default function InspirationGrid({ items, onCreate, onUpdate, onDelete }:
           onDelete={dialogItem !== "new" ? handleDelete : undefined}
         />
       ) : null}
-    </div>
+    </>
   );
 }
