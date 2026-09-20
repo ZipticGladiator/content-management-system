@@ -104,6 +104,14 @@ h1 {
   z-index: 40;
 }
 
+.nav-toggle {
+  display: none;
+}
+
+.nav-spacer {
+  flex: 1;
+}
+
 .topnav-inner {
   max-width: 1240px;
   margin: 0 auto;
@@ -171,6 +179,39 @@ h1 {
 .navlinks a:hover {
   color: var(--ink);
   background: var(--sunk);
+}
+
+@media (max-width: 900px) {
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  .nav-spacer {
+    display: none;
+  }
+
+  .navlinks {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 2px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding: 8px 16px 16px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .navlinks.open {
+    display: flex;
+  }
+
+  .navlinks a {
+    width: 100%;
+  }
 }
 
 .navlinks a[data-active="true"] {
@@ -758,6 +799,7 @@ label.f select {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 18px;
   align-items: center;

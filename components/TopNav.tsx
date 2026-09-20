@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/login/actions";
@@ -9,6 +10,7 @@ import NotificationBell from "@/components/NotificationBell";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
 import HelpIcon from "@/components/icons/HelpIcon";
+import MenuIcon from "@/components/icons/MenuIcon";
 import type { NotificationEntry } from "@/lib/notifications";
 import type { SessionPayload } from "@/lib/auth";
 
@@ -31,25 +33,50 @@ export default function TopNav({
   user: SessionPayload | null;
 }) {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [menuOpen]);
 
   if (pathname === "/login") return null;
 
   return (
-    <div className="topnav">
+    <div className="topnav" ref={navRef}>
       <div className="topnav-inner">
         <Link href="/youtube" className="brand">
           <span className="brand-dot" />
           SIYA // CYBERSECURITY CMS
         </Link>
-        <nav className="navlinks">
+        <button
+          type="button"
+          className="btn nav-toggle"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+        >
+          <MenuIcon size={16} />
+        </button>
+        <nav className={`navlinks${menuOpen ? " open" : ""}`}>
           {LINKS.map((link) => (
-            <Link key={link.href} href={link.href} data-active={pathname.startsWith(link.href)}>
+            <Link
+              key={link.href}
+              href={link.href}
+              data-active={pathname.startsWith(link.href)}
+              onClick={() => setMenuOpen(false)}
+            >
               {link.icon}
               {link.label}
             </Link>
           ))}
         </nav>
-        <span style={{ flex: 1 }} />
+        <span className="nav-spacer" />
         <NotificationBell notifications={notifications} />
         <button type="button" className="btn theme-toggle" onClick={openOnboarding} aria-label="Replay onboarding tour">
           <HelpIcon size={15} />
