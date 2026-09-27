@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { deleteComment, getComments } from "@/app/comments/actions";
-import { ApiError, handle, parseKind, readJson, requireUser } from "@/lib/mobile-api";
+import { ApiError, assertItem, handle, parseKind, readJson, requireUser } from "@/lib/mobile-api";
 
 type Ctx = RouteContext<"/api/mobile/items/[kind]/[id]/comments">;
 
@@ -21,6 +21,7 @@ export const POST = handle(async (req: NextRequest, ctx: Ctx) => {
   const { body } = await readJson<{ body?: unknown }>(req);
   const clean = typeof body === "string" ? body.trim() : "";
   if (!clean) throw new ApiError(400, "Comment can't be empty");
+  await assertItem(kind, id);
 
   const row = await prisma.comment.create({
     data: {

@@ -1,6 +1,7 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { verifySessionToken, type SessionPayload } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { CATEGORY_KEYS, TIKTOK_STAGES, YOUTUBE_STAGES, YOUTUBE_STEPS } from "@/lib/pipeline";
 import type { ItemKind, PipelineItemInput } from "@/lib/types";
 import { PLATFORM_KEYS, TYPE_KEYS } from "@/lib/inspiration";
@@ -48,6 +49,9 @@ export function handle<C>(fn: (req: NextRequest, ctx: C) => Promise<Response>) {
       return await fn(req, ctx);
     } catch (err) {
       if (err instanceof ApiError) return NextResponse.json({ error: err.message }, { status: err.status });
+      // Prisma: P2025 = record to update/delete not found, P2003 = foreign key points at a missing row.
+      const code = (err as { code?: unknown } | null)?.code;
+      if (code === "P2025" || code === "P2003") return NextResponse.json({ error: "Not found" }, { status: 404 });
       console.error("[mobile-api]", err);
       return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
@@ -57,6 +61,16 @@ export function handle<C>(fn: (req: NextRequest, ctx: C) => Promise<Response>) {
 export function parseKind(value: string): ItemKind {
   if (value === "youtube" || value === "tiktok") return value;
   throw new ApiError(404, "Unknown item kind");
+}
+
+/** 404s unless the video/clip exists and isn't in Trash — check before side effects like storage uploads. */
+export async function assertItem(kind: ItemKind, id: string): Promise<void> {
+  const where = { id, deletedAt: null };
+  const found =
+    kind === "youtube"
+      ? await prisma.youtubeVideo.findFirst({ where, select: { id: true } })
+      : await prisma.tiktokClip.findFirst({ where, select: { id: true } });
+  if (!found) throw new ApiError(404, "Item not found");
 }
 
 export async function readJson<T = Record<string, unknown>>(req: NextRequest): Promise<T> {
