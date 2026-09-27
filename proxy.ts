@@ -12,5 +12,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login|_next/static|_next/image|favicon.ico).*)"],
+  // api/mobile authenticates with a bearer token in each route (lib/mobile-api.ts), not the cookie.
+  matcher: ["/((?!login|api/mobile|_next/static|_next/image|favicon.ico).*)"],
 };
