@@ -33,6 +33,12 @@ scripts, and keeping both platforms' pipelines organized in one place.
 - **Dark cyber theme** — styled to match the Hacking Hub brand, with a
   light-mode toggle for anyone who prefers it.
 
+- **Mobile API** — `/api/mobile/*` REST endpoints (bearer-token auth, same
+  accounts and session signing as the web login) that back the
+  [mobile app](https://github.com/ZipticGladiator/cms-app). `proxy.ts` lets
+  these through without the cookie, and each route authenticates itself via
+  `requireUser()` in `lib/mobile-api.ts`.
+
 ## Stack
 
 - **Next.js** (App Router, TypeScript) + Tailwind CSS
