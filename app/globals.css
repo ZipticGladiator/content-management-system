@@ -1081,6 +1081,40 @@ label.f select {
   border-color: var(--c);
 }
 
+.cal-day.drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset, var(--glow) var(--accent);
+}
+
+.cal-item[draggable="true"] {
+  cursor: grab;
+  -webkit-touch-callout: none;
+}
+
+.cal-item.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+  user-select: none;
+}
+
+.cal-item.saving {
+  opacity: 0.6;
+}
+
+.cal-item.posted {
+  background: color-mix(in srgb, var(--s-pub) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--s-pub) 45%, transparent);
+}
+
+.cal-posted {
+  margin-right: 3px;
+}
+
+.cal-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .cal-item .platform-dot {
   display: inline-block;
   width: 6px;

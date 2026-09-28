@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Category, YoutubeStatus } from "@/app/generated/prisma/client";
 import { YOUTUBE_STAGES, YOUTUBE_STEPS, stageLabel } from "@/lib/pipeline";
 import { addSystemComment } from "@/app/comments/actions";
+import { fmtDate } from "@/lib/format";
 import type { PipelineItemInput } from "@/lib/types";
 
 function toData(data: PipelineItemInput) {
@@ -98,4 +99,27 @@ export async function updateYoutubeStatus(id: string, status: string) {
   await prisma.youtubeVideo.update({ where: { id }, data });
   if (existing) await logStatusChange(id, existing.status, status);
   revalidatePath("/youtube");
+}
+
+/**
+ * Narrow, due-date-only update for dragging an item to another day on the
+ * calendar. Like the category update, it deliberately doesn't rebuild the
+ * whole record, so a stale client snapshot can't revert other fields.
+ * `dueDate` is YYYY-MM-DD (or null to clear it).
+ */
+export async function updateYoutubeDueDate(id: string, dueDate: string | null) {
+  if (dueDate !== null && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) throw new Error("Invalid due date");
+  const existing = await prisma.youtubeVideo.findUnique({ where: { id }, select: { dueDate: true } });
+  if (!existing) throw new Error("Video not found");
+  const next = dueDate ? new Date(dueDate) : null;
+  if ((existing.dueDate?.getTime() ?? null) === (next?.getTime() ?? null)) return;
+
+  await prisma.youtubeVideo.update({ where: { id }, data: { dueDate: next } });
+  await addSystemComment(
+    "youtube",
+    id,
+    `Due date changed: ${existing.dueDate ? fmtDate(existing.dueDate) : "none"} → ${next ? fmtDate(next) : "none"}`
+  );
+  revalidatePath("/youtube");
+  revalidatePath("/calendar");
 }

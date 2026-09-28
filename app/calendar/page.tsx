@@ -7,12 +7,10 @@ import {
   monthParam,
   parseMonthParam,
 } from "@/lib/calendar";
+import CheckIcon from "@/components/icons/CheckIcon";
+import CalendarGrid, { type CalGridItem } from "@/components/CalendarGrid";
 
 export const dynamic = "force-dynamic";
-
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-type CalItem = { id: string; title: string; kind: "youtube" | "tiktok" };
 
 export default async function CalendarPage({
   searchParams,
@@ -28,25 +26,30 @@ export default async function CalendarPage({
   const [videos, clips] = await Promise.all([
     prisma.youtubeVideo.findMany({
       where: { deletedAt: null, dueDate: { gte: rangeStart, lt: rangeEnd } },
-      select: { id: true, title: true, dueDate: true },
+      select: { id: true, title: true, dueDate: true, status: true },
     }),
     prisma.tiktokClip.findMany({
       where: { deletedAt: null, dueDate: { gte: rangeStart, lt: rangeEnd } },
-      select: { id: true, title: true, dueDate: true },
+      select: { id: true, title: true, dueDate: true, status: true },
     }),
   ]);
 
-  const byDate = new Map<string, CalItem[]>();
-  for (const v of videos) {
-    const iso = v.dueDate!.toISOString().slice(0, 10);
-    if (!byDate.has(iso)) byDate.set(iso, []);
-    byDate.get(iso)!.push({ id: v.id, title: v.title, kind: "youtube" });
-  }
-  for (const c of clips) {
-    const iso = c.dueDate!.toISOString().slice(0, 10);
-    if (!byDate.has(iso)) byDate.set(iso, []);
-    byDate.get(iso)!.push({ id: c.id, title: c.title, kind: "tiktok" });
-  }
+  const items: CalGridItem[] = [
+    ...videos.map((v) => ({
+      id: v.id,
+      title: v.title,
+      kind: "youtube" as const,
+      date: v.dueDate!.toISOString().slice(0, 10),
+      posted: v.status === "PUBLISHED",
+    })),
+    ...clips.map((c) => ({
+      id: c.id,
+      title: c.title,
+      kind: "tiktok" as const,
+      date: c.dueDate!.toISOString().slice(0, 10),
+      posted: c.status === "POSTED",
+    })),
+  ];
 
   const prev = adjacentMonth(year, monthIndex0, -1);
   const next = adjacentMonth(year, monthIndex0, 1);
@@ -83,41 +86,16 @@ export default async function CalendarPage({
         <span>
           <i className="sw" style={{ background: "#25F4EE" }} /> TikTok
         </span>
+        <span>
+          <CheckIcon size={13} /> Posted
+        </span>
+        <span className="cal-hint">Drag an item to another day to change its due date</span>
       </div>
 
-      <div className="cal-grid">
-        {WEEKDAYS.map((w) => (
-          <div className="cal-weekday" key={w}>
-            {w}
-          </div>
-        ))}
-        {days.map((day) => {
-          const items = byDate.get(day.iso) ?? [];
-          return (
-            <div
-              key={day.iso}
-              className={`cal-day${day.inMonth ? "" : " outside"}${day.isToday ? " today" : ""}`}
-            >
-              <span className="cal-daynum">{day.dayOfMonth}</span>
-              {items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/${item.kind}?open=${item.id}`}
-                  className="cal-item"
-                  style={{ ["--c" as string]: item.kind === "youtube" ? "#FF0000" : "#25F4EE" }}
-                  title={item.title}
-                >
-                  <span
-                    className="platform-dot"
-                    style={{ background: item.kind === "youtube" ? "#FF0000" : "#25F4EE" }}
-                  />
-                  {item.title}
-                </Link>
-              ))}
-            </div>
-          );
-        })}
-      </div>
+      <CalendarGrid
+        days={days.map(({ iso, dayOfMonth, inMonth, isToday }) => ({ iso, dayOfMonth, inMonth, isToday }))}
+        items={items}
+      />
     </div>
   );
 }
