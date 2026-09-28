@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { ATTACHMENTS_BUCKET, supabaseAdmin } from "@/lib/supabase-admin";
+import { ATTACHMENTS_BUCKET, getSupabaseAdmin } from "@/lib/supabase-admin";
 import type { AttachmentEntry, ItemKind } from "@/lib/types";
 
 function toEntry(row: { id: string; label: string; url: string; createdAt: Date }): AttachmentEntry {
@@ -34,7 +34,7 @@ export async function uploadAttachment(
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `${kind}/${itemId}/${Date.now()}-${safeName}`;
 
-  const { error: uploadError } = await supabaseAdmin.storage
+  const { error: uploadError } = await getSupabaseAdmin().storage
     .from(ATTACHMENTS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
 
@@ -42,7 +42,7 @@ export async function uploadAttachment(
     throw new Error(`Upload failed: ${uploadError.message}`);
   }
 
-  const { data } = supabaseAdmin.storage.from(ATTACHMENTS_BUCKET).getPublicUrl(path);
+  const { data } = getSupabaseAdmin().storage.from(ATTACHMENTS_BUCKET).getPublicUrl(path);
 
   const label = String(formData.get("label") || "").trim() || file.name;
   const row = await prisma.attachment.create({
@@ -60,7 +60,7 @@ export async function deleteAttachment(kind: ItemKind, id: string): Promise<void
     const prefix = `${kind}/`;
     const marker = row.url.split(`/${ATTACHMENTS_BUCKET}/`)[1];
     if (marker && marker.startsWith(prefix)) {
-      await supabaseAdmin.storage.from(ATTACHMENTS_BUCKET).remove([marker]);
+      await getSupabaseAdmin().storage.from(ATTACHMENTS_BUCKET).remove([marker]);
     }
   }
   revalidatePath(kind === "youtube" ? "/youtube" : "/tiktok");
