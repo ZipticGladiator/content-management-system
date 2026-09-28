@@ -35,11 +35,23 @@ export const GET = handle(async (req: NextRequest, ctx: Ctx) => {
   return NextResponse.json({ script: await loadScript((await ctx.params).id) });
 });
 
+/**
+ * Body: { body, status, baseUpdatedAt? }. With `baseUpdatedAt` (the version the
+ * phone last saw), a script changed elsewhere since then is NOT overwritten:
+ * 409 with the current version, so the app can ask which copy to keep. Omit it
+ * to overwrite (the "keep mine" choice).
+ */
 export const PUT = handle(async (req: NextRequest, ctx: Ctx) => {
   await requireUser(req);
   const { id } = await ctx.params;
-  await loadScript(id);
-  const body = await readJson<{ body?: unknown; status?: unknown }>(req);
+  const current = await loadScript(id);
+  const body = await readJson<{ body?: unknown; status?: unknown; baseUpdatedAt?: unknown }>(req);
+  if (typeof body.baseUpdatedAt === "string") {
+    const base = Date.parse(body.baseUpdatedAt);
+    if (!Number.isNaN(base) && Date.parse(current.updatedAt) > base) {
+      return NextResponse.json({ error: "This script was changed somewhere else", script: current }, { status: 409 });
+    }
+  }
   const text = typeof body.body === "string" ? body.body : "";
   const status = body.status === ScriptStatus.FINAL ? ScriptStatus.FINAL : ScriptStatus.DRAFT;
   await updateScript(id, text, status);

@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { notifyNewComment } from "@/lib/push";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import type { CommentEntry, ItemKind } from "@/lib/types";
@@ -41,6 +43,7 @@ export async function addComment(kind: ItemKind, itemId: string, body: string): 
     data: { ...fkFor(kind, itemId), author: cleanAuthor, body: cleanBody },
   });
   revalidatePath(kind === "youtube" ? "/youtube" : "/tiktok");
+  after(() => notifyNewComment({ kind, itemId, author: cleanAuthor, body: cleanBody, authorUserId: user?.uid }));
   return toEntry(row);
 }
 
