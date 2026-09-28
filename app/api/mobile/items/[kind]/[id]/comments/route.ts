@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { notifyNewComment } from "@/lib/push";
 import { prisma } from "@/lib/prisma";
 import { deleteComment, getComments } from "@/app/comments/actions";
 import { ApiError, assertItem, handle, parseKind, readJson, requireUser } from "@/lib/mobile-api";
@@ -31,6 +33,7 @@ export const POST = handle(async (req: NextRequest, ctx: Ctx) => {
     },
   });
   revalidatePath(`/${kind}`);
+  after(() => notifyNewComment({ kind, itemId: id, author: row.author, body: row.body, authorUserId: user.uid }));
   return NextResponse.json(
     {
       comment: {

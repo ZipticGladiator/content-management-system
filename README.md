@@ -38,6 +38,10 @@ scripts, and keeping both platforms' pipelines organized in one place.
   [mobile app](https://github.com/ZipticGladiator/cms-app). `proxy.ts` lets
   these through without the cookie, and each route authenticates itself via
   `requireUser()` in `lib/mobile-api.ts`.
+- **Push notifications**: phones register their Expo push token via `/api/mobile/push`
+  (`PushDevice` table). New comments push to everyone except the author
+  (`lib/push.ts`), and a daily cron (`/api/cron/notify-overdue`, 06:00 UTC)
+  sends an overdue summary.
 
 ## Stack
 

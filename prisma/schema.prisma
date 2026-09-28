@@ -31,6 +31,22 @@ model User {
   role         UserRole @default(EDITOR)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  pushDevices PushDevice[]
+}
+
+/// A phone signed in to the mobile app that should receive push notifications.
+/// `token` is its Expo push token; re-registering from another account moves it.
+model PushDevice {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform  String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 enum YoutubeStatus {
