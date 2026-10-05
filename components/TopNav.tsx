@@ -18,6 +18,7 @@ const LINKS = [
   { href: "/youtube", label: "YouTube", icon: <YouTubeIcon size={16} /> },
   { href: "/tiktok", label: "TikTok", icon: <TikTokIcon size={16} /> },
   { href: "/scripts", label: "Scripts", icon: null },
+  { href: "/assets", label: "Assets", icon: null },
   { href: "/calendar", label: "Calendar", icon: null },
   { href: "/inspiration", label: "Inspiration", icon: null },
   { href: "/analytics", label: "Analytics", icon: null },

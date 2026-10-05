@@ -6,6 +6,8 @@ import { CATEGORY_KEYS, TIKTOK_STAGES, YOUTUBE_STAGES, YOUTUBE_STEPS } from "@/l
 import type { ItemKind, PipelineItemInput } from "@/lib/types";
 import { PLATFORM_KEYS, TYPE_KEYS } from "@/lib/inspiration";
 import type { InspirationInput } from "@/app/inspiration/actions";
+import type { AssetInput } from "@/app/assets/actions";
+import { ASSET_TYPE_KEYS } from "@/lib/assets";
 import {
   createYoutubeVideo,
   deleteYoutubeVideo,
@@ -153,5 +155,28 @@ export function parseInspirationInput(body: Record<string, unknown>): Inspiratio
     url: typeof body.url === "string" ? body.url.trim() : "",
     followers: Math.max(0, Math.round(Number(body.followers) || 0)),
     description: typeof body.description === "string" ? body.description : "",
+  };
+}
+
+/** Validates an asset body up front so bad links get a 400 with a reason, not a 500 from the action. */
+export function parseAssetInput(body: Record<string, unknown>): AssetInput {
+  const url = typeof body.url === "string" ? body.url.trim() : "";
+  if (!/^https?:\/\//i.test(url)) throw new ApiError(400, "Link must start with http:// or https://");
+  try {
+    new URL(url);
+  } catch {
+    throw new ApiError(400, "That doesn't look like a valid link");
+  }
+  const rawItem = body.item as { kind?: unknown; id?: unknown } | null | undefined;
+  const item =
+    rawItem && (rawItem.kind === "youtube" || rawItem.kind === "tiktok") && typeof rawItem.id === "string" && rawItem.id
+      ? { kind: rawItem.kind as ItemKind, id: rawItem.id }
+      : null;
+  return {
+    title: typeof body.title === "string" ? body.title : "",
+    url,
+    type: (ASSET_TYPE_KEYS as unknown[]).includes(body.type) ? (body.type as string) : "OTHER",
+    notes: typeof body.notes === "string" ? body.notes : "",
+    item,
   };
 }

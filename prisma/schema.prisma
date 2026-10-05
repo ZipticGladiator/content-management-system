@@ -107,12 +107,13 @@ model YoutubeVideo {
   stepThumbnail Boolean @default(false)
   stepUpload    Boolean @default(false)
 
-  notes       String   @default("")
+  notes       String       @default("")
   script      Script?
   comments    Comment[]
   attachments Attachment[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  assets      Asset[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@index([deletedAt])
 }
@@ -133,6 +134,7 @@ model TiktokClip {
   script      Script?
   comments    Comment[]
   attachments Attachment[]
+  assets      Asset[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -259,4 +261,36 @@ model Editor {
   notes         String   @default("")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+enum AssetType {
+  THUMBNAIL
+  DOCUMENT
+  VIDEO
+  IMAGE
+  AUDIO
+  OTHER
+}
+
+/// A link to a file kept elsewhere (usually Google Drive): thumbnails, docs,
+/// footage. The file itself isn't stored here. Optionally tied to one video or
+/// clip; purging that item from Trash keeps the asset, just unlinked.
+model Asset {
+  id    String    @id @default(cuid())
+  title String
+  url   String
+  type  AssetType @default(OTHER)
+  notes String    @default("")
+
+  youtubeVideoId String?       @map("youtube_video_id")
+  youtubeVideo   YoutubeVideo? @relation(fields: [youtubeVideoId], references: [id], onDelete: SetNull)
+
+  tiktokClipId String?     @map("tiktok_clip_id")
+  tiktokClip   TiktokClip? @relation(fields: [tiktokClipId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([youtubeVideoId])
+  @@index([tiktokClipId])
 }

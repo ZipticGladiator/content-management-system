@@ -18,6 +18,10 @@ scripts, and keeping both platforms' pipelines organized in one place.
 - **Comments & attachments** — a ClickUp-style comment thread on every video/
   clip, plus file uploads (thumbnails, reference docs) stored in Supabase
   Storage.
+- **Assets**: a library of Google Drive links (thumbnails, docs, footage),
+  tagged by type and optionally linked to a video/clip, with Drive previews
+  for files shared "anyone with the link". Only the link is stored; the
+  files stay on Drive.
 - **Content calendar** — a month view plotting due/scheduled/posted dates from
   both platforms together, so gaps or clashes in posting cadence are visible
   at a glance.
