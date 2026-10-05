@@ -10,6 +10,7 @@ import CheckIcon from "@/components/icons/CheckIcon";
 import CompassIcon from "@/components/icons/CompassIcon";
 import CalendarIcon from "@/components/icons/CalendarIcon";
 import BellIcon from "@/components/icons/BellIcon";
+import FolderIcon from "@/components/icons/FolderIcon";
 import LightbulbIcon from "@/components/icons/LightbulbIcon";
 import ChartIcon from "@/components/icons/ChartIcon";
 import WalletIcon from "@/components/icons/WalletIcon";
@@ -49,6 +50,11 @@ const STEPS: Step[] = [
     title: "Comments, files & paid tracking",
     body: "Leave updates or questions on any video or clip — like a running conversation thread — and attach thumbnails or reference files alongside them. YouTube videos also get a Paid checkbox once the editor's been paid, tallied automatically in the budget stat up top.",
     icon: <CommentIcon size={30} />,
+  },
+  {
+    title: "Assets",
+    body: "Keep the Google Drive links for thumbnails, script docs, footage folders and anything else in one place. Tag each one by type, link it to the video or clip it belongs to, and open or copy the link in one click.",
+    icon: <FolderIcon size={30} />,
   },
   {
     title: "Content calendar",
