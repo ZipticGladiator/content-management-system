@@ -2,25 +2,28 @@
 
 :root,
 :root[data-theme="dark"] {
-  --bg: #050505;
-  --surface: #0d1420;
-  --sunk: #0a0f18;
-  --ink: #f4f6fb;
-  --muted: #94a3b8;
-  --line: rgba(255, 255, 255, 0.12);
-  --accent: #ccff00;
-  --accent-ink: #050505;
+  /* Spotify system design: near-black base, Spotify Green accent, bold geometric
+     sans, generous rounded surfaces — see the mobile-app-ui-design skill's 60/30/10
+     color rule and 8-point grid (ceorkm/mobile-app-ui-design). */
+  --bg: #121212;
+  --surface: #181818;
+  --sunk: #0a0a0a;
+  --ink: #ffffff;
+  --muted: #a7a7a7;
+  --line: rgba(255, 255, 255, 0.1);
+  --accent: #1ed760;
+  --accent-ink: #000000;
   --warn: #facc15;
-  --danger: #ff2a5f;
-  --s-idea: #64748b;
-  --s-script: #7000ff;
-  --s-film: #0ed7b5;
+  --danger: #f15e6c;
+  --s-idea: #6a6a6a;
+  --s-script: #a371f7;
+  --s-film: #1ed760;
   --s-edit: #facc15;
-  --s-sched: #38bdf8;
-  --s-pub: #ccff00;
-  --s-posted: #ff2a5f;
-  --tiktok-accent: #ff2a5f;
-  --grid-line: rgba(255, 255, 255, 0.05);
+  --s-sched: #509bf5;
+  --s-pub: #1ed760;
+  --s-posted: #f15e6c;
+  --tiktok-accent: #f15e6c;
+  --grid-line: transparent;
   --glow: 0 0 20px;
   --display: var(--font-display), "Segoe UI", system-ui, sans-serif;
   --body: var(--font-body), "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -29,23 +32,23 @@
 }
 
 :root[data-theme="light"] {
-  --bg: #f3f5f9;
+  --bg: #f6f6f6;
   --surface: #ffffff;
-  --sunk: #e9edf4;
-  --ink: #172033;
-  --muted: #5b6477;
-  --line: #d9dee8;
-  --accent: #0b7a75;
+  --sunk: #ececec;
+  --ink: #121212;
+  --muted: #5a5a5a;
+  --line: #e2e2e2;
+  --accent: #1a9c4a;
   --accent-ink: #ffffff;
   --warn: #a8620e;
-  --danger: #b42318;
+  --danger: #c23a4a;
   --s-idea: #8a94a6;
   --s-script: #6d5bd0;
-  --s-film: #0b7a75;
+  --s-film: #1a9c4a;
   --s-edit: #c47f17;
   --s-sched: #2f6fde;
-  --s-pub: #2e8b57;
-  --s-posted: #2e8b57;
+  --s-pub: #1a9c4a;
+  --s-posted: #1a9c4a;
   --tiktok-accent: #d0316c;
   --grid-line: transparent;
   --glow: 0 0 0px;

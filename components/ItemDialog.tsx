@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORY_KEYS, CATEGORY_LABELS, type StageDef } from "@/lib/pipeline";
+import type { CategoryOption, StageDef } from "@/lib/pipeline";
 import type { ItemKind, PipelineItem, PipelineItemInput, StatEntry } from "@/lib/types";
 import CommentsSection from "@/components/CommentsSection";
 import AttachmentsSection from "@/components/AttachmentsSection";
 
 type Props = {
   kind: ItemKind;
+  orgId: string;
+  categories: CategoryOption[];
   stages: readonly StageDef[];
   steps?: readonly (readonly [string, string])[];
   showCostAndEditor?: boolean;
@@ -24,6 +26,8 @@ type Props = {
 
 export default function ItemDialog({
   kind,
+  orgId,
+  categories,
   stages,
   steps,
   showCostAndEditor,
@@ -40,7 +44,7 @@ export default function ItemDialog({
   const isNew = !initial;
   const [title, setTitle] = useState(initial?.title ?? "");
   const [pitch, setPitch] = useState(initial?.pitch ?? "");
-  const [category, setCategory] = useState<string>(initial?.category ?? CATEGORY_KEYS[0]);
+  const [category, setCategory] = useState<string>(initial?.category ?? categories[0]?.key ?? "");
   const [status, setStatus] = useState(initial?.status ?? stages[0][0]);
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? "");
   const [cost, setCost] = useState(initial?.cost ?? 0);
@@ -117,9 +121,9 @@ export default function ItemDialog({
             <label className="f">
               Category
               <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {CATEGORY_KEYS.map((key) => (
-                  <option key={key} value={key}>
-                    {CATEGORY_LABELS[key]}
+                {categories.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
                   </option>
                 ))}
               </select>
@@ -261,8 +265,8 @@ export default function ItemDialog({
                 </div>
               </div>
             ) : null}
-            <AttachmentsSection kind={kind} itemId={initial.id} />
-            <CommentsSection kind={kind} itemId={initial.id} />
+            <AttachmentsSection orgId={orgId} kind={kind} itemId={initial.id} />
+            <CommentsSection orgId={orgId} kind={kind} itemId={initial.id} />
           </div>
         ) : null}
       </div>

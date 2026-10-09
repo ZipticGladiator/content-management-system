@@ -10,6 +10,7 @@ export type SessionPayload = {
   email: string;
   name: string;
   role: "OWNER" | "EDITOR";
+  orgId: string;
   exp: number;
 };
 
@@ -31,7 +32,7 @@ async function getKey(secret: string) {
   );
 }
 
-export async function createSessionToken(user: { id: string; email: string; name: string; role: "OWNER" | "EDITOR" }): Promise<string> {
+export async function createSessionToken(user: { id: string; email: string; name: string; role: "OWNER" | "EDITOR"; orgId: string }): Promise<string> {
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET is not set");
   const payload: SessionPayload = {
@@ -39,6 +40,7 @@ export async function createSessionToken(user: { id: string; email: string; name
     email: user.email,
     name: user.name,
     role: user.role,
+    orgId: user.orgId,
     exp: Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000,
   };
   const payloadB64 = base64url(encoder.encode(JSON.stringify(payload)));

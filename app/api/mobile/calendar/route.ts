@@ -1,11 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { adjacentMonth, monthLabel, monthParam, parseMonthParam } from "@/lib/calendar";
-import { handle, requireUser } from "@/lib/mobile-api";
+import { handle, requireScoped } from "@/lib/mobile-api";
 
 /** GET ?month=YYYY-MM — every video/clip due in that month, as a flat date-sorted agenda. */
 export const GET = handle(async (req: NextRequest) => {
-  await requireUser(req);
+  const { db } = await requireScoped(req);
   const { year, monthIndex0 } = parseMonthParam(req.nextUrl.searchParams.get("month") ?? undefined);
   const start = new Date(Date.UTC(year, monthIndex0, 1));
   const end = new Date(Date.UTC(year, monthIndex0 + 1, 1));
@@ -13,8 +12,8 @@ export const GET = handle(async (req: NextRequest) => {
   const select = { id: true, title: true, dueDate: true, status: true } as const;
 
   const [videos, clips] = await Promise.all([
-    prisma.youtubeVideo.findMany({ where, select }),
-    prisma.tiktokClip.findMany({ where, select }),
+    db.youtubeVideo.findMany({ where, select }),
+    db.tiktokClip.findMany({ where, select }),
   ]);
 
   const items = [

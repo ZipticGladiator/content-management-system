@@ -28,8 +28,8 @@ export type VideoStats = {
  * Returns null if not connected, the video isn't found, or the call fails
  * (e.g. the video belongs to a different channel).
  */
-export async function fetchVideoStats(videoId: string): Promise<VideoStats | null> {
-  const accessToken = await getValidAccessToken();
+export async function fetchVideoStats(orgId: string, videoId: string): Promise<VideoStats | null> {
+  const accessToken = await getValidAccessToken(orgId);
   if (!accessToken) return null;
 
   const params = new URLSearchParams({
@@ -68,8 +68,8 @@ export type ChannelOverview = {
  * Fetches channel-wide totals for the trailing 30 days. Returns null if not
  * connected or the call fails.
  */
-export async function fetchChannelOverview(): Promise<ChannelOverview | null> {
-  const accessToken = await getValidAccessToken();
+export async function fetchChannelOverview(orgId: string): Promise<ChannelOverview | null> {
+  const accessToken = await getValidAccessToken(orgId);
   if (!accessToken) return null;
 
   const end = new Date();
@@ -99,8 +99,8 @@ export async function fetchChannelOverview(): Promise<ChannelOverview | null> {
  * Fetches the channel's top videos by lifetime views in a single call, most
  * viewed first. Returns null if not connected or the call fails.
  */
-export async function fetchTopVideosByViews(limit = 10): Promise<{ videoId: string; views: number }[] | null> {
-  const accessToken = await getValidAccessToken();
+export async function fetchTopVideosByViews(orgId: string, limit = 10): Promise<{ videoId: string; views: number }[] | null> {
+  const accessToken = await getValidAccessToken(orgId);
   if (!accessToken) return null;
 
   const params = new URLSearchParams({
@@ -127,8 +127,8 @@ export async function fetchTopVideosByViews(limit = 10): Promise<{ videoId: stri
 }
 
 /** Current subscriber count (a live snapshot, via the Data API rather than Analytics). */
-export async function fetchSubscriberCount(): Promise<number | null> {
-  const accessToken = await getValidAccessToken();
+export async function fetchSubscriberCount(orgId: string): Promise<number | null> {
+  const accessToken = await getValidAccessToken(orgId);
   if (!accessToken) return null;
 
   const res = await fetch(

@@ -1,12 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { ApiError, handle, parseKind, readJson, requireUser } from "@/lib/mobile-api";
+import { ApiError, handle, parseKind, readJson, requireScoped } from "@/lib/mobile-api";
 
 export const GET = handle(async (req: NextRequest) => {
-  await requireUser(req);
+  const { db } = await requireScoped(req);
   const [scripts, videosWithoutScript, clipsWithoutScript] = await Promise.all([
-    prisma.script.findMany({
+    db.script.findMany({
       where: { OR: [{ youtubeVideo: { deletedAt: null } }, { tiktokClip: { deletedAt: null } }] },
       select: {
         id: true,
@@ -18,12 +17,12 @@ export const GET = handle(async (req: NextRequest) => {
       },
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.youtubeVideo.findMany({
+    db.youtubeVideo.findMany({
       where: { script: null, deletedAt: null },
       select: { id: true, title: true },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.tiktokClip.findMany({
+    db.tiktokClip.findMany({
       where: { script: null, deletedAt: null },
       select: { id: true, title: true },
       orderBy: { createdAt: "asc" },
@@ -47,20 +46,23 @@ export const GET = handle(async (req: NextRequest) => {
 
 /** Body: { kind: "youtube" | "tiktok", itemId } — starts an empty draft for that video/clip. */
 export const POST = handle(async (req: NextRequest) => {
-  await requireUser(req);
+  const { session, db } = await requireScoped(req);
   const body = await readJson<{ kind?: unknown; itemId?: unknown }>(req);
   const kind = parseKind(String(body.kind ?? ""));
   const itemId = typeof body.itemId === "string" ? body.itemId : "";
   if (!itemId) throw new ApiError(400, "itemId is required");
 
-  const existing = await prisma.script.findFirst({
+  const existing = await db.script.findFirst({
     where: kind === "youtube" ? { youtubeVideoId: itemId } : { tiktokClipId: itemId },
     select: { id: true },
   });
   if (existing) return NextResponse.json({ id: existing.id });
 
-  const script = await prisma.script.create({
-    data: kind === "youtube" ? { youtubeVideoId: itemId } : { tiktokClipId: itemId },
+  const script = await db.script.create({
+    data: {
+      ...(kind === "youtube" ? { youtubeVideoId: itemId } : { tiktokClipId: itemId }),
+      orgId: session.orgId,
+    },
   });
   revalidatePath("/scripts");
   return NextResponse.json({ id: script.id }, { status: 201 });

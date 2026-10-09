@@ -11,11 +11,11 @@ export const POST = handle(async (req: NextRequest) => {
   if (!isExpoPushToken(token)) throw new ApiError(400, "Invalid push token");
   const platform = body.platform === "ios" || body.platform === "android" ? body.platform : "";
 
-  // A phone that signs in as someone else moves to that account.
+  // A phone that signs in as someone else moves to that account — and that account's org.
   await prisma.pushDevice.upsert({
     where: { token },
-    create: { token, userId: user.uid, platform },
-    update: { userId: user.uid, platform },
+    create: { token, userId: user.uid, platform, orgId: user.orgId },
+    update: { userId: user.uid, platform, orgId: user.orgId },
   });
   return NextResponse.json({ ok: true });
 });

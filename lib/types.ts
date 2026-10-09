@@ -1,4 +1,3 @@
-import type { CategoryKey } from "@/lib/pipeline";
 
 export type ItemKind = "youtube" | "tiktok";
 
@@ -6,7 +5,7 @@ export type PipelineItem = {
   id: string;
   title: string;
   pitch: string;
-  category: CategoryKey;
+  category: string;
   status: string;
   dueDate: string | null;
   cost: number;
@@ -50,7 +49,7 @@ export type TrashEntry = {
   id: string;
   kind: ItemKind;
   title: string;
-  category: CategoryKey;
+  category: string;
   cost: number;
   deletedAt: string;
 };

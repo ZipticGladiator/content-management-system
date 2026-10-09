@@ -1,17 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { Category, TiktokStatus } from "@/app/generated/prisma/client";
+import { TiktokStatus } from "@/app/generated/prisma/client";
+import { scopedPrisma } from "@/lib/org";
 import { TIKTOK_STAGES, stageLabel } from "@/lib/pipeline";
 import { addSystemComment } from "@/app/comments/actions";
 import type { PipelineItemInput } from "@/lib/types";
+
+// See app/youtube/actions.ts for why every export here takes `orgId` first.
 
 function toData(data: PipelineItemInput) {
   return {
     title: data.title,
     pitch: data.pitch,
-    category: data.category as Category,
+    category: data.category,
     status: data.status as TiktokStatus,
     dueDate: data.dueDate ? new Date(data.dueDate) : null,
     cost: data.cost,
@@ -22,38 +24,43 @@ function toData(data: PipelineItemInput) {
   };
 }
 
-async function logStatusChange(id: string, from: string, to: string) {
+async function logStatusChange(orgId: string, id: string, from: string, to: string) {
   if (from === to) return;
   await addSystemComment(
+    orgId,
     "tiktok",
     id,
     `Status changed: ${stageLabel(TIKTOK_STAGES, from)} → ${stageLabel(TIKTOK_STAGES, to)}`
   );
 }
 
-export async function createTiktokClip(data: PipelineItemInput) {
-  await prisma.tiktokClip.create({ data: toData(data) });
+export async function createTiktokClip(orgId: string, data: PipelineItemInput) {
+  const db = scopedPrisma(orgId);
+  await db.tiktokClip.create({ data: { ...toData(data), orgId } });
   revalidatePath("/tiktok");
 }
 
-export async function updateTiktokClip(id: string, data: PipelineItemInput) {
-  const existing = await prisma.tiktokClip.findUnique({ where: { id }, select: { status: true } });
+export async function updateTiktokClip(orgId: string, id: string, data: PipelineItemInput) {
+  const db = scopedPrisma(orgId);
+  const existing = await db.tiktokClip.findUnique({ where: { id }, select: { status: true } });
   const payload = toData(data);
-  await prisma.tiktokClip.update({ where: { id }, data: payload });
-  if (existing) await logStatusChange(id, existing.status, payload.status);
+  await db.tiktokClip.update({ where: { id }, data: payload });
+  if (existing) await logStatusChange(orgId, id, existing.status, payload.status);
   revalidatePath("/tiktok");
 }
 
-export async function deleteTiktokClip(id: string) {
-  await prisma.tiktokClip.update({ where: { id }, data: { deletedAt: new Date() } });
+export async function deleteTiktokClip(orgId: string, id: string) {
+  const db = scopedPrisma(orgId);
+  await db.tiktokClip.update({ where: { id }, data: { deletedAt: new Date() } });
   revalidatePath("/tiktok");
   revalidatePath("/trash");
 }
 
-export async function duplicateTiktokClip(id: string) {
-  const c = await prisma.tiktokClip.findUnique({ where: { id } });
+export async function duplicateTiktokClip(orgId: string, id: string) {
+  const db = scopedPrisma(orgId);
+  const c = await db.tiktokClip.findUnique({ where: { id } });
   if (!c) return;
-  await prisma.tiktokClip.create({
+  await db.tiktokClip.create({
     data: {
       title: `${c.title} (copy)`,
       pitch: c.pitch,
@@ -62,6 +69,7 @@ export async function duplicateTiktokClip(id: string) {
       cost: c.cost,
       editor: c.editor,
       notes: c.notes,
+      orgId,
     },
   });
   revalidatePath("/tiktok");
@@ -74,14 +82,16 @@ export async function duplicateTiktokClip(id: string) {
  * (e.g. a status change made moments earlier hasn't round-tripped yet),
  * a bulk category update would silently revert it.
  */
-export async function updateTiktokCategory(id: string, category: string) {
-  await prisma.tiktokClip.update({ where: { id }, data: { category: category as Category } });
+export async function updateTiktokCategory(orgId: string, id: string, category: string) {
+  const db = scopedPrisma(orgId);
+  await db.tiktokClip.update({ where: { id }, data: { category } });
   revalidatePath("/tiktok");
 }
 
-export async function updateTiktokStatus(id: string, status: string) {
-  const existing = await prisma.tiktokClip.findUnique({ where: { id }, select: { status: true } });
-  await prisma.tiktokClip.update({ where: { id }, data: { status: status as TiktokStatus } });
-  if (existing) await logStatusChange(id, existing.status, status);
+export async function updateTiktokStatus(orgId: string, id: string, status: string) {
+  const db = scopedPrisma(orgId);
+  const existing = await db.tiktokClip.findUnique({ where: { id }, select: { status: true } });
+  await db.tiktokClip.update({ where: { id }, data: { status: status as TiktokStatus } });
+  if (existing) await logStatusChange(orgId, id, existing.status, status);
   revalidatePath("/tiktok");
 }

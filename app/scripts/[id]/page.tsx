@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { requireOrgSession } from "@/lib/org";
 import ScriptEditor from "@/components/ScriptEditor";
 import { deleteScript, generateScriptDraftForScript, updateScript } from "@/app/scripts/actions";
 
@@ -11,7 +11,10 @@ export default async function ScriptPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const script = await prisma.script.findUnique({
+  const { session, db } = await requireOrgSession();
+  const orgId = session.orgId;
+
+  const script = await db.script.findUnique({
     where: { id },
     include: {
       youtubeVideo: { select: { title: true } },
@@ -31,9 +34,9 @@ export default async function ScriptPage({
       platform={platform}
       initialBody={script.body}
       initialStatus={script.status}
-      onSave={updateScript}
-      onDelete={deleteScript}
-      onGenerateDraft={generateScriptDraftForScript}
+      onSave={updateScript.bind(null, orgId)}
+      onDelete={deleteScript.bind(null, orgId)}
+      onGenerateDraft={generateScriptDraftForScript.bind(null, orgId)}
     />
   );
 }

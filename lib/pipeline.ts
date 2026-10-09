@@ -1,12 +1,9 @@
-export const CATEGORY_LABELS = {
-  EDUCATIONAL: "Educational",
-  TECHNICAL: "Technical",
-  LIFESTYLE: "Lifestyle",
-} as const;
+/** A per-org, user-editable category (replaces the old fixed Educational/Technical/Lifestyle enum). */
+export type CategoryOption = { key: string; label: string };
 
-export type CategoryKey = keyof typeof CATEGORY_LABELS;
-
-export const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS) as CategoryKey[];
+export function categoryLabel(categories: readonly CategoryOption[], key: string): string {
+  return categories.find((c) => c.key === key)?.label ?? key;
+}
 
 export const YOUTUBE_STAGES = [
   ["IDEA", "Idea", "--s-idea"],

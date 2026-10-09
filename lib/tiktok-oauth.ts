@@ -1,5 +1,5 @@
 import "server-only";
-import { prisma } from "@/lib/prisma";
+import { scopedPrisma } from "@/lib/org";
 
 const SCOPES = ["user.info.basic", "video.list"].join(",");
 
@@ -38,7 +38,7 @@ async function fetchDisplayName(accessToken: string) {
   return data.data?.user?.display_name ?? null;
 }
 
-export async function handleOAuthCallback(code: string) {
+export async function handleOAuthCallback(orgId: string, code: string) {
   const res = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
     method: "POST",
     headers: {
@@ -62,32 +62,28 @@ export async function handleOAuthCallback(code: string) {
   const displayName = await fetchDisplayName(tokens.access_token);
   const accessTokenExp = new Date(Date.now() + tokens.expires_in * 1000);
 
-  const existing = await prisma.tiktokAuth.findFirst();
-  const data = {
-    refreshToken: tokens.refresh_token,
-    accessToken: tokens.access_token,
-    accessTokenExp,
-    openId: tokens.open_id,
-    displayName,
-  };
-  if (existing) {
-    await prisma.tiktokAuth.update({ where: { id: existing.id }, data });
-  } else {
-    await prisma.tiktokAuth.create({ data });
-  }
+  // One connected account per org (TiktokAuth.orgId is unique).
+  const db = scopedPrisma(orgId);
+  await db.tiktokAuth.upsert({
+    where: { orgId },
+    create: { refreshToken: tokens.refresh_token, accessToken: tokens.access_token, accessTokenExp, openId: tokens.open_id, displayName, orgId },
+    update: { refreshToken: tokens.refresh_token, accessToken: tokens.access_token, accessTokenExp, openId: tokens.open_id, displayName },
+  });
 }
 
-export async function getConnectedAccount() {
-  return prisma.tiktokAuth.findFirst();
+export async function getConnectedAccount(orgId: string) {
+  return scopedPrisma(orgId).tiktokAuth.findFirst();
 }
 
-export async function disconnectTiktok() {
-  const existing = await prisma.tiktokAuth.findFirst();
-  if (existing) await prisma.tiktokAuth.delete({ where: { id: existing.id } });
+export async function disconnectTiktok(orgId: string) {
+  const db = scopedPrisma(orgId);
+  const existing = await db.tiktokAuth.findFirst();
+  if (existing) await db.tiktokAuth.delete({ where: { id: existing.id } });
 }
 
-export async function getValidAccessToken(): Promise<string | null> {
-  const auth = await prisma.tiktokAuth.findFirst();
+export async function getValidAccessToken(orgId: string): Promise<string | null> {
+  const db = scopedPrisma(orgId);
+  const auth = await db.tiktokAuth.findFirst();
   if (!auth) return null;
 
   if (auth.accessToken && auth.accessTokenExp && auth.accessTokenExp.getTime() > Date.now() + 60_000) {
@@ -112,7 +108,7 @@ export async function getValidAccessToken(): Promise<string | null> {
   if (!res.ok || tokens.error) return null;
 
   const accessTokenExp = new Date(Date.now() + tokens.expires_in * 1000);
-  await prisma.tiktokAuth.update({
+  await db.tiktokAuth.update({
     where: { id: auth.id },
     data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token, accessTokenExp },
   });

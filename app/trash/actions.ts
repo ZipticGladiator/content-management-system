@@ -1,25 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { scopedPrisma } from "@/lib/org";
 
 export type TrashKind = "youtube" | "tiktok";
 
-export async function restoreItem(kind: TrashKind, id: string) {
+export async function restoreItem(orgId: string, kind: TrashKind, id: string) {
+  const db = scopedPrisma(orgId);
   if (kind === "youtube") {
-    await prisma.youtubeVideo.update({ where: { id }, data: { deletedAt: null } });
+    await db.youtubeVideo.update({ where: { id }, data: { deletedAt: null } });
   } else {
-    await prisma.tiktokClip.update({ where: { id }, data: { deletedAt: null } });
+    await db.tiktokClip.update({ where: { id }, data: { deletedAt: null } });
   }
   revalidatePath("/trash");
   revalidatePath(`/${kind}`);
 }
 
-export async function purgeItem(kind: TrashKind, id: string) {
+export async function purgeItem(orgId: string, kind: TrashKind, id: string) {
+  const db = scopedPrisma(orgId);
   if (kind === "youtube") {
-    await prisma.youtubeVideo.delete({ where: { id } });
+    await db.youtubeVideo.delete({ where: { id } });
   } else {
-    await prisma.tiktokClip.delete({ where: { id } });
+    await db.tiktokClip.delete({ where: { id } });
   }
   revalidatePath("/trash");
 }

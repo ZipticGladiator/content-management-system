@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
 import TikTokIcon from "@/components/icons/TikTokIcon";
 import DocumentIcon from "@/components/icons/DocumentIcon";
@@ -95,11 +95,26 @@ const STEPS: Step[] = [
 
 export default function Onboarding() {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
 
+  // The mobile app deep-links here (?onboarding=1) for a new user who hasn't done
+  // any setup yet — the tour is the closest thing this app has to a wizard.
   useEffect(() => {
-    if (pathname === "/login") return;
+    if (searchParams.get("onboarding") !== "1") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStep(0);
+    setVisible(true);
+    const params = new URLSearchParams(searchParams);
+    params.delete("onboarding");
+    router.replace(params.size ? `${pathname}?${params}` : pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (pathname === "/login" || pathname === "/signup" || pathname.startsWith("/invite/")) return;
     try {
       if (!localStorage.getItem(ONBOARD_KEY)) {
         // First render must match the server (hidden); only after mount can we safely
@@ -130,7 +145,7 @@ export default function Onboarding() {
     }
   }
 
-  if (!visible || pathname === "/login") return null;
+  if (!visible || pathname === "/login" || pathname === "/signup" || pathname.startsWith("/invite/")) return null;
 
   const isLast = step === STEPS.length - 1;
   const current = STEPS[step];

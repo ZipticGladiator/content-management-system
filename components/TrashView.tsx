@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORY_LABELS } from "@/lib/pipeline";
+import { categoryLabel, type CategoryOption } from "@/lib/pipeline";
 import { rand, timeAgo } from "@/lib/format";
 import type { ItemKind, TrashEntry } from "@/lib/types";
 import YouTubeIcon from "@/components/icons/YouTubeIcon";
@@ -10,11 +10,12 @@ import TikTokIcon from "@/components/icons/TikTokIcon";
 
 type Props = {
   items: TrashEntry[];
+  categories: CategoryOption[];
   onRestore: (kind: ItemKind, id: string) => Promise<void>;
   onPurge: (kind: ItemKind, id: string) => Promise<void>;
 };
 
-export default function TrashView({ items, onRestore, onPurge }: Props) {
+export default function TrashView({ items, categories, onRestore, onPurge }: Props) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -74,7 +75,7 @@ export default function TrashView({ items, onRestore, onPurge }: Props) {
                       {item.kind === "youtube" ? "YouTube" : "TikTok"}
                     </span>
                   </td>
-                  <td className="cat">{CATEGORY_LABELS[item.category]}</td>
+                  <td className="cat">{categoryLabel(categories, item.category)}</td>
                   <td className="num">{item.cost ? rand(item.cost) : <span className="cat">—</span>}</td>
                   <td className="cat">{timeAgo(item.deletedAt)}</td>
                   <td style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

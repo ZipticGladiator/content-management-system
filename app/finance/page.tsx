@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { requireOrgSession } from "@/lib/org";
 import FinanceView from "@/components/FinanceView";
 import { createEditor, deleteEditor, markItemsPaid, updateEditor } from "@/app/finance/actions";
 import type { EditorEntry, EditorSpend, FinanceSummary, PlatformSpend } from "@/lib/finance";
@@ -10,16 +10,19 @@ function emptyPlatform(): PlatformSpend {
 }
 
 export default async function FinancePage() {
+  const { session, db } = await requireOrgSession();
+  const orgId = session.orgId;
+
   const [videos, clips, editorRows] = await Promise.all([
-    prisma.youtubeVideo.findMany({
+    db.youtubeVideo.findMany({
       where: { deletedAt: null },
       select: { id: true, title: true, cost: true, paid: true, editor: true },
     }),
-    prisma.tiktokClip.findMany({
+    db.tiktokClip.findMany({
       where: { deletedAt: null },
       select: { id: true, title: true, cost: true, paid: true, editor: true },
     }),
-    prisma.editor.findMany({ orderBy: { createdAt: "asc" } }),
+    db.editor.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
 
   const youtube = emptyPlatform();
@@ -83,10 +86,10 @@ export default async function FinancePage() {
     <FinanceView
       summary={summary}
       editors={editors}
-      onCreate={createEditor}
-      onUpdate={updateEditor}
-      onDelete={deleteEditor}
-      onMarkPaid={markItemsPaid}
+      onCreate={createEditor.bind(null, orgId)}
+      onUpdate={updateEditor.bind(null, orgId)}
+      onDelete={deleteEditor.bind(null, orgId)}
+      onMarkPaid={markItemsPaid.bind(null, orgId)}
     />
   );
 }

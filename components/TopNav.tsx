@@ -26,12 +26,21 @@ const LINKS = [
   { href: "/trash", label: "Trash", icon: null },
 ];
 
+// Workspace administration — only the owner manages the team, billing and branding.
+const OWNER_LINKS = [
+  { href: "/team", label: "Team", icon: null },
+  { href: "/billing", label: "Billing", icon: null },
+  { href: "/settings", label: "Settings", icon: null },
+];
+
 export default function TopNav({
   notifications,
   user,
+  orgName,
 }: {
   notifications: NotificationEntry[];
   user: SessionPayload | null;
+  orgName: string | null;
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -46,14 +55,16 @@ export default function TopNav({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [menuOpen]);
 
-  if (pathname === "/login") return null;
+  if (pathname === "/login" || pathname === "/signup" || pathname.startsWith("/invite/")) return null;
+
+  const links = user?.role === "OWNER" ? [...LINKS, ...OWNER_LINKS] : LINKS;
 
   return (
     <div className="topnav" ref={navRef}>
       <div className="topnav-inner">
         <Link href="/youtube" className="brand">
           <span className="brand-dot" />
-          SIYA // CYBERSECURITY CMS
+          {orgName ?? "SOCIAL FLOW"}
         </Link>
         <button
           type="button"
@@ -65,7 +76,7 @@ export default function TopNav({
           <MenuIcon size={16} />
         </button>
         <nav className={`navlinks${menuOpen ? " open" : ""}`}>
-          {LINKS.map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}

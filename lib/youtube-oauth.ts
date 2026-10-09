@@ -1,5 +1,5 @@
 import "server-only";
-import { prisma } from "@/lib/prisma";
+import { scopedPrisma } from "@/lib/org";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/yt-analytics.readonly",
@@ -42,7 +42,7 @@ async function fetchChannelInfo(accessToken: string) {
   return channel ? { id: channel.id as string, title: channel.snippet?.title as string } : null;
 }
 
-export async function handleOAuthCallback(code: string) {
+export async function handleOAuthCallback(orgId: string, code: string) {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -69,33 +69,41 @@ export async function handleOAuthCallback(code: string) {
   const channel = await fetchChannelInfo(tokens.access_token);
   const accessTokenExp = new Date(Date.now() + tokens.expires_in * 1000);
 
-  // Singleton: this app manages one connected YouTube channel.
-  const existing = await prisma.youtubeAuth.findFirst();
-  const data = {
-    refreshToken: tokens.refresh_token,
-    accessToken: tokens.access_token,
-    accessTokenExp,
-    channelId: channel?.id ?? null,
-    channelTitle: channel?.title ?? null,
-  };
-  if (existing) {
-    await prisma.youtubeAuth.update({ where: { id: existing.id }, data });
-  } else {
-    await prisma.youtubeAuth.create({ data });
-  }
+  // One connected channel per org (YoutubeAuth.orgId is unique).
+  const db = scopedPrisma(orgId);
+  await db.youtubeAuth.upsert({
+    where: { orgId },
+    create: {
+      refreshToken: tokens.refresh_token,
+      accessToken: tokens.access_token,
+      accessTokenExp,
+      channelId: channel?.id ?? null,
+      channelTitle: channel?.title ?? null,
+      orgId,
+    },
+    update: {
+      refreshToken: tokens.refresh_token,
+      accessToken: tokens.access_token,
+      accessTokenExp,
+      channelId: channel?.id ?? null,
+      channelTitle: channel?.title ?? null,
+    },
+  });
 }
 
-export async function getConnectedChannel() {
-  return prisma.youtubeAuth.findFirst();
+export async function getConnectedChannel(orgId: string) {
+  return scopedPrisma(orgId).youtubeAuth.findFirst();
 }
 
-export async function disconnectYoutube() {
-  const existing = await prisma.youtubeAuth.findFirst();
-  if (existing) await prisma.youtubeAuth.delete({ where: { id: existing.id } });
+export async function disconnectYoutube(orgId: string) {
+  const db = scopedPrisma(orgId);
+  const existing = await db.youtubeAuth.findFirst();
+  if (existing) await db.youtubeAuth.delete({ where: { id: existing.id } });
 }
 
-export async function getValidAccessToken(): Promise<string | null> {
-  const auth = await prisma.youtubeAuth.findFirst();
+export async function getValidAccessToken(orgId: string): Promise<string | null> {
+  const db = scopedPrisma(orgId);
+  const auth = await db.youtubeAuth.findFirst();
   if (!auth) return null;
 
   if (auth.accessToken && auth.accessTokenExp && auth.accessTokenExp.getTime() > Date.now() + 60_000) {
@@ -119,7 +127,7 @@ export async function getValidAccessToken(): Promise<string | null> {
 
   const tokens: TokenResponse = await res.json();
   const accessTokenExp = new Date(Date.now() + tokens.expires_in * 1000);
-  await prisma.youtubeAuth.update({
+  await db.youtubeAuth.update({
     where: { id: auth.id },
     data: { accessToken: tokens.access_token, accessTokenExp },
   });

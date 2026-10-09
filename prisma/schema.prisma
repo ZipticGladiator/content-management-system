@@ -12,15 +12,54 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Category {
-  EDUCATIONAL
-  TECHNICAL
-  LIFESTYLE
-}
-
 enum UserRole {
   OWNER
   EDITOR
+}
+
+enum Plan {
+  STARTER
+  CREATOR_PRO
+  AGENCY
+}
+
+/// A workspace: one subscription, one brand, one set of content. Every
+/// content table below belongs to exactly one Organization — see
+/// lib/org.ts, which is the one place that enforces it.
+model Organization {
+  id          String @id @default(cuid())
+  name        String
+  accentColor String @default("#ccff00")
+  plan        Plan   @default(STARTER)
+
+  // The plan's limits, copied onto the org when the plan changes (lib/plans.ts)
+  // so a past downgrade/upgrade doesn't silently change what an org already had.
+  seatLimit    Int @default(2)
+  accountLimit Int @default(1)
+  aiDraftLimit Int @default(20)
+
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  categories    Category[]
+  invites       Invite[]
+  youtubeVideos YoutubeVideo[]
+  tiktokClips   TiktokClip[]
+  scripts       Script[]
+  comments      Comment[]
+  attachments   Attachment[]
+  assets        Asset[]
+  editors       Editor[]
+  inspirations  Inspiration[]
+  goals         Goal[]
+  youtubeAuths  YoutubeAuth[]
+  tiktokAuths   TiktokAuth[]
+  pushDevices   PushDevice[]
+  aiDraftLogs   AiDraftLog[]
 }
 
 model User {
@@ -32,7 +71,60 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
   pushDevices PushDevice[]
+
+  @@index([orgId])
+}
+
+/// A pending "join this org" link, since there's no transactional email
+/// service wired up yet — the owner copies the link instead of it being
+/// emailed automatically (lib/invites.ts).
+model Invite {
+  id            String    @id @default(cuid())
+  email         String
+  role          UserRole  @default(EDITOR)
+  token         String    @unique
+  invitedByName String
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+/// Replaces the old fixed Category enum: every org defines its own labels.
+model Category {
+  id        String   @id @default(cuid())
+  key       String
+  label     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, key])
+  @@index([orgId])
+}
+
+/// One row per AI script draft generated, so "drafts used this month" is a
+/// count, not a counter that can drift. lib/plans.ts reads it for the
+/// billing page.
+model AiDraftLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, createdAt])
 }
 
 /// A phone signed in to the mobile app that should receive push notifications.
@@ -46,7 +138,11 @@ model PushDevice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
   @@index([userId])
+  @@index([orgId])
 }
 
 enum YoutubeStatus {
@@ -91,7 +187,7 @@ model YoutubeVideo {
   id        String        @id @default(cuid())
   title     String
   pitch     String        @default("")
-  category  Category      @default(EDUCATIONAL)
+  category  String        @default("")
   status    YoutubeStatus @default(IDEA)
   dueDate   DateTime?
   cost      Int           @default(0)
@@ -115,14 +211,18 @@ model YoutubeVideo {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
   @@index([deletedAt])
+  @@index([orgId])
 }
 
 model TiktokClip {
   id          String       @id @default(cuid())
   title       String
   pitch       String       @default("")
-  category    Category     @default(EDUCATIONAL)
+  category    String       @default("")
   status      TiktokStatus @default(IDEA)
   dueDate     DateTime?
   cost        Int          @default(0)
@@ -138,7 +238,11 @@ model TiktokClip {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
   @@index([deletedAt])
+  @@index([orgId])
 }
 
 model Script {
@@ -154,6 +258,11 @@ model Script {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
 }
 
 model Comment {
@@ -170,8 +279,12 @@ model Comment {
 
   createdAt DateTime @default(now())
 
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
   @@index([youtubeVideoId])
   @@index([tiktokClipId])
+  @@index([orgId])
 }
 
 model YoutubeAuth {
@@ -184,6 +297,9 @@ model YoutubeAuth {
   connectedEmail String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 }
 
 model TiktokAuth {
@@ -195,6 +311,9 @@ model TiktokAuth {
   displayName    String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 }
 
 model Attachment {
@@ -210,8 +329,12 @@ model Attachment {
 
   createdAt DateTime @default(now())
 
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
   @@index([youtubeVideoId])
   @@index([tiktokClipId])
+  @@index([orgId])
 }
 
 model Inspiration {
@@ -224,6 +347,11 @@ model Inspiration {
   description String              @default("")
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
 }
 
 model Goal {
@@ -236,6 +364,11 @@ model Goal {
   snapshots     GoalSnapshot[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
 }
 
 model GoalSnapshot {
@@ -261,6 +394,11 @@ model Editor {
   notes         String   @default("")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
 }
 
 enum AssetType {
@@ -291,6 +429,10 @@ model Asset {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
   @@index([youtubeVideoId])
   @@index([tiktokClipId])
+  @@index([orgId])
 }

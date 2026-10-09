@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { requireOrgSession } from "@/lib/org";
 import {
   adjacentMonth,
   getMonthGrid,
@@ -20,17 +20,18 @@ export default async function CalendarPage({
   searchParams: Promise<{ month?: string }>;
 }) {
   const { month } = await searchParams;
+  const { db } = await requireOrgSession();
   const { year, monthIndex0 } = parseMonthParam(month);
   const days = getMonthGrid(year, monthIndex0);
   const rangeStart = days[0].date;
   const rangeEnd = new Date(days[41].date.getTime() + 86400000);
 
   const [videos, clips] = await Promise.all([
-    prisma.youtubeVideo.findMany({
+    db.youtubeVideo.findMany({
       where: { deletedAt: null, dueDate: { gte: rangeStart, lt: rangeEnd } },
       select: { id: true, title: true, dueDate: true },
     }),
-    prisma.tiktokClip.findMany({
+    db.tiktokClip.findMany({
       where: { deletedAt: null, dueDate: { gte: rangeStart, lt: rangeEnd } },
       select: { id: true, title: true, dueDate: true },
     }),

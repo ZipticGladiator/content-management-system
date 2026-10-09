@@ -1,6 +1,5 @@
 import "server-only";
-import { prisma } from "@/lib/prisma";
-import type { Category } from "@/app/generated/prisma/client";
+import { scopedPrisma } from "@/lib/org";
 
 const DAY_MS = 86400000;
 
@@ -10,10 +9,10 @@ const DAY_MS = 86400000;
  * "Status changed: X → Published/Posted" comments give an accurate publish
  * moment instead, so analytics reads those rather than trusting updatedAt.
  */
-async function derivePublishDates(kind: "youtube" | "tiktok"): Promise<Map<string, Date>> {
+async function derivePublishDates(db: ReturnType<typeof scopedPrisma>, kind: "youtube" | "tiktok"): Promise<Map<string, Date>> {
   const marker = kind === "youtube" ? "→ Published" : "→ Posted";
   const idField = kind === "youtube" ? "youtubeVideoId" : "tiktokClipId";
-  const comments = await prisma.comment.findMany({
+  const comments = await db.comment.findMany({
     where: { isSystem: true, body: { endsWith: marker }, [idField]: { not: null } },
     select: { youtubeVideoId: true, tiktokClipId: true, createdAt: true },
     orderBy: { createdAt: "desc" },
@@ -27,7 +26,7 @@ async function derivePublishDates(kind: "youtube" | "tiktok"): Promise<Map<strin
 }
 
 export type WeekBucket = { weekStart: string; youtube: number; tiktok: number };
-export type CategoryMix = { category: Category; count: number };
+export type CategoryMix = { category: string; count: number };
 
 export type AnalyticsSummary = {
   publishedLast30Days: number;
@@ -50,30 +49,32 @@ function isoWeekStart(date: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+export async function getAnalyticsSummary(orgId: string): Promise<AnalyticsSummary> {
+  const db = scopedPrisma(orgId);
   const now = new Date();
   const since30d = new Date(now.getTime() - 30 * DAY_MS);
   const weeks = 12;
   const sinceWeeks = new Date(now.getTime() - weeks * 7 * DAY_MS);
 
-  const [videos, clips, youtubePublish, tiktokPublish, youtubeGoal, tiktokGoal] = await Promise.all([
-    prisma.youtubeVideo.findMany({
+  const [videos, clips, youtubePublish, tiktokPublish, youtubeGoal, tiktokGoal, categories] = await Promise.all([
+    db.youtubeVideo.findMany({
       where: { deletedAt: null },
       select: { id: true, status: true, category: true, cost: true, createdAt: true, updatedAt: true },
     }),
-    prisma.tiktokClip.findMany({
+    db.tiktokClip.findMany({
       where: { deletedAt: null },
       select: { id: true, status: true, category: true, cost: true, createdAt: true, updatedAt: true },
     }),
-    derivePublishDates("youtube"),
-    derivePublishDates("tiktok"),
-    prisma.goal.findFirst({ where: { platform: "YOUTUBE" }, select: { id: true } }),
-    prisma.goal.findFirst({ where: { platform: "TIKTOK" }, select: { id: true } }),
+    derivePublishDates(db, "youtube"),
+    derivePublishDates(db, "tiktok"),
+    db.goal.findFirst({ where: { platform: "YOUTUBE" }, select: { id: true } }),
+    db.goal.findFirst({ where: { platform: "TIKTOK" }, select: { id: true } }),
+    db.category.findMany({ select: { key: true }, orderBy: { order: "asc" } }),
   ]);
 
   type PublishedItem = {
     id: string;
-    category: Category;
+    category: string;
     cost: number;
     createdAt: Date;
     publishedAt: Date;
@@ -82,7 +83,7 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     platform: "youtube" | "tiktok";
   };
 
-  function toPublished<T extends { id: string; status: string; category: Category; cost: number; createdAt: Date; updatedAt: Date }>(
+  function toPublished<T extends { id: string; status: string; category: string; cost: number; createdAt: Date; updatedAt: Date }>(
     rows: T[],
     doneStatus: string,
     dated: Map<string, Date>,
@@ -144,11 +145,11 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
   async function gained30d(goalId: string | undefined): Promise<number | null> {
     if (!goalId) return null;
     const [latest, baseline] = await Promise.all([
-      prisma.goalSnapshot.findFirst({ where: { goalId }, orderBy: { capturedAt: "desc" } }),
-      prisma.goalSnapshot.findFirst({ where: { goalId, capturedAt: { lte: since30d } }, orderBy: { capturedAt: "desc" } }),
+      db.goalSnapshot.findFirst({ where: { goalId }, orderBy: { capturedAt: "desc" } }),
+      db.goalSnapshot.findFirst({ where: { goalId, capturedAt: { lte: since30d } }, orderBy: { capturedAt: "desc" } }),
     ]);
     if (!latest) return null;
-    const base = baseline ?? (await prisma.goalSnapshot.findFirst({ where: { goalId }, orderBy: { capturedAt: "asc" } }));
+    const base = baseline ?? (await db.goalSnapshot.findFirst({ where: { goalId }, orderBy: { capturedAt: "asc" } }));
     if (!base || base.id === latest.id) return null;
     return latest.value - base.value;
   }
@@ -172,13 +173,13 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     weeklyOutput.push(weekMap.get(wk) ?? { weekStart: wk, youtube: 0, tiktok: 0 });
   }
 
-  const categoryCounts = new Map<Category, number>();
+  const categoryCounts = new Map<string, number>();
   for (const p of allPublished) {
     categoryCounts.set(p.category, (categoryCounts.get(p.category) ?? 0) + 1);
   }
-  const categoryMix: CategoryMix[] = (["EDUCATIONAL", "TECHNICAL", "LIFESTYLE"] as Category[]).map((category) => ({
-    category,
-    count: categoryCounts.get(category) ?? 0,
+  const categoryMix: CategoryMix[] = categories.map(({ key }) => ({
+    category: key,
+    count: categoryCounts.get(key) ?? 0,
   }));
 
   return {

@@ -19,8 +19,8 @@ export type ClipStats = {
  * TikTok's public API only exposes live cumulative counters, not a
  * historical/date-ranged breakdown the way YouTube Analytics does.
  */
-export async function fetchClipStats(videoId: string): Promise<ClipStats | null> {
-  const accessToken = await getValidAccessToken();
+export async function fetchClipStats(orgId: string, videoId: string): Promise<ClipStats | null> {
+  const accessToken = await getValidAccessToken(orgId);
   if (!accessToken) return null;
 
   const res = await fetch(
@@ -55,9 +55,9 @@ export async function fetchClipStats(videoId: string): Promise<ClipStats | null>
  * live cumulative counters, so this is a snapshot, not a lifetime-to-date
  * measure the way YouTube's Analytics API provides.
  */
-export async function fetchClipsViews(videoIds: string[]): Promise<{ videoId: string; views: number }[] | null> {
+export async function fetchClipsViews(orgId: string, videoIds: string[]): Promise<{ videoId: string; views: number }[] | null> {
   if (!videoIds.length) return [];
-  const accessToken = await getValidAccessToken();
+  const accessToken = await getValidAccessToken(orgId);
   if (!accessToken) return null;
 
   const res = await fetch(
@@ -88,8 +88,8 @@ export type AccountOverview = {
 };
 
 /** Current account totals — a snapshot, not a trailing-period delta. */
-export async function fetchAccountOverview(): Promise<AccountOverview | null> {
-  const accessToken = await getValidAccessToken();
+export async function fetchAccountOverview(orgId: string): Promise<AccountOverview | null> {
+  const accessToken = await getValidAccessToken(orgId);
   if (!accessToken) return null;
 
   const res = await fetch(

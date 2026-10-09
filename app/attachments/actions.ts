@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { scopedPrisma } from "@/lib/org";
 import { ATTACHMENTS_BUCKET, getSupabaseAdmin } from "@/lib/supabase-admin";
 import type { AttachmentEntry, ItemKind } from "@/lib/types";
 
@@ -13,8 +13,9 @@ function fkFor(kind: ItemKind, itemId: string) {
   return kind === "youtube" ? { youtubeVideoId: itemId } : { tiktokClipId: itemId };
 }
 
-export async function getAttachments(kind: ItemKind, itemId: string): Promise<AttachmentEntry[]> {
-  const rows = await prisma.attachment.findMany({
+export async function getAttachments(orgId: string, kind: ItemKind, itemId: string): Promise<AttachmentEntry[]> {
+  const db = scopedPrisma(orgId);
+  const rows = await db.attachment.findMany({
     where: fkFor(kind, itemId),
     orderBy: { createdAt: "asc" },
   });
@@ -22,17 +23,20 @@ export async function getAttachments(kind: ItemKind, itemId: string): Promise<At
 }
 
 export async function uploadAttachment(
+  orgId: string,
   kind: ItemKind,
   itemId: string,
   formData: FormData
 ): Promise<AttachmentEntry> {
+  const db = scopedPrisma(orgId);
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     throw new Error("No file provided");
   }
 
+  // Namespaced by org too, so two orgs' files can never collide or be guessed from one another's paths.
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const path = `${kind}/${itemId}/${Date.now()}-${safeName}`;
+  const path = `${orgId}/${kind}/${itemId}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await getSupabaseAdmin().storage
     .from(ATTACHMENTS_BUCKET)
@@ -45,21 +49,21 @@ export async function uploadAttachment(
   const { data } = getSupabaseAdmin().storage.from(ATTACHMENTS_BUCKET).getPublicUrl(path);
 
   const label = String(formData.get("label") || "").trim() || file.name;
-  const row = await prisma.attachment.create({
-    data: { ...fkFor(kind, itemId), label, url: data.publicUrl },
+  const row = await db.attachment.create({
+    data: { ...fkFor(kind, itemId), label, url: data.publicUrl, orgId },
   });
 
   revalidatePath(kind === "youtube" ? "/youtube" : "/tiktok");
   return toEntry(row);
 }
 
-export async function deleteAttachment(kind: ItemKind, id: string): Promise<void> {
-  const row = await prisma.attachment.findUnique({ where: { id } });
-  await prisma.attachment.delete({ where: { id } });
+export async function deleteAttachment(orgId: string, kind: ItemKind, id: string): Promise<void> {
+  const db = scopedPrisma(orgId);
+  const row = await db.attachment.findUnique({ where: { id } });
+  await db.attachment.delete({ where: { id } });
   if (row) {
-    const prefix = `${kind}/`;
     const marker = row.url.split(`/${ATTACHMENTS_BUCKET}/`)[1];
-    if (marker && marker.startsWith(prefix)) {
+    if (marker && marker.startsWith(`${orgId}/${kind}/`)) {
       await getSupabaseAdmin().storage.from(ATTACHMENTS_BUCKET).remove([marker]);
     }
   }

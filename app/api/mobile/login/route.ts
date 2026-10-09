@@ -13,7 +13,7 @@ export const POST = handle(async (req) => {
   const ok = user ? await verifyPassword(password, user.passwordHash) : false;
   if (!user || !ok) throw new ApiError(401, "Incorrect email or password");
 
-  const token = await createSessionToken({ id: user.id, email: user.email, name: user.name, role: user.role });
+  const token = await createSessionToken({ id: user.id, email: user.email, name: user.name, role: user.role, orgId: user.orgId });
   return NextResponse.json({
     token,
     user: { id: user.id, email: user.email, name: user.name, role: user.role },

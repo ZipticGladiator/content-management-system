@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { login } from "@/app/login/actions";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,9 @@ export default async function LoginPage({
           Sign in
         </button>
       </form>
+      <p className="sub" style={{ marginTop: 20 }}>
+        New here? <Link href="/signup">Create a workspace</Link>
+      </p>
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { verifySessionToken, type SessionPayload } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { CATEGORY_KEYS, TIKTOK_STAGES, YOUTUBE_STAGES, YOUTUBE_STEPS } from "@/lib/pipeline";
+import { scopedPrisma, type ScopedDb } from "@/lib/org";
+import { TIKTOK_STAGES, YOUTUBE_STAGES, YOUTUBE_STEPS } from "@/lib/pipeline";
 import type { ItemKind, PipelineItemInput } from "@/lib/types";
 import { PLATFORM_KEYS, TYPE_KEYS } from "@/lib/inspiration";
 import type { InspirationInput } from "@/app/inspiration/actions";
@@ -28,7 +28,10 @@ import {
 // REST layer for the Expo mobile app (cms-app). Native clients can't use
 // server actions or the httpOnly session cookie, so they send the same signed
 // session token as `Authorization: Bearer <token>` instead. proxy.ts skips
-// /api/mobile — every route here must call requireUser() itself.
+// /api/mobile — every route here must call requireUser() (or requireScoped())
+// itself. The session token carries orgId (lib/auth.ts), so every route gets
+// a client scoped to the signed-in user's own org the same way the web app's
+// server actions do (lib/org.ts) — never the raw, unscoped prisma import.
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -44,6 +47,12 @@ export async function requireUser(req: NextRequest): Promise<SessionPayload> {
   return user;
 }
 
+/** The common case: an authenticated request, with a db client scoped to the caller's own org. */
+export async function requireScoped(req: NextRequest): Promise<{ session: SessionPayload; db: ScopedDb }> {
+  const session = await requireUser(req);
+  return { session, db: scopedPrisma(session.orgId) };
+}
+
 /** Wraps a handler so thrown ApiErrors (and anything unexpected) become JSON error responses. */
 export function handle<C>(fn: (req: NextRequest, ctx: C) => Promise<Response>) {
   return async (req: NextRequest, ctx: C): Promise<Response> => {
@@ -51,7 +60,8 @@ export function handle<C>(fn: (req: NextRequest, ctx: C) => Promise<Response>) {
       return await fn(req, ctx);
     } catch (err) {
       if (err instanceof ApiError) return NextResponse.json({ error: err.message }, { status: err.status });
-      // Prisma: P2025 = record to update/delete not found, P2003 = foreign key points at a missing row.
+      // Prisma: P2025 = record to update/delete not found (including "exists, but in another org" —
+      // lib/org.ts's scoped client folds that into the same not-found case), P2003 = foreign key points at a missing row.
       const code = (err as { code?: unknown } | null)?.code;
       if (code === "P2025" || code === "P2003") return NextResponse.json({ error: "Not found" }, { status: 404 });
       console.error("[mobile-api]", err);
@@ -65,13 +75,13 @@ export function parseKind(value: string): ItemKind {
   throw new ApiError(404, "Unknown item kind");
 }
 
-/** 404s unless the video/clip exists and isn't in Trash — check before side effects like storage uploads. */
-export async function assertItem(kind: ItemKind, id: string): Promise<void> {
+/** 404s unless the video/clip exists, isn't in Trash, and belongs to the caller's org — check before side effects like storage uploads. */
+export async function assertItem(db: ScopedDb, kind: ItemKind, id: string): Promise<void> {
   const where = { id, deletedAt: null };
   const found =
     kind === "youtube"
-      ? await prisma.youtubeVideo.findFirst({ where, select: { id: true } })
-      : await prisma.tiktokClip.findFirst({ where, select: { id: true } });
+      ? await db.youtubeVideo.findFirst({ where, select: { id: true } })
+      : await db.tiktokClip.findFirst({ where, select: { id: true } });
   if (!found) throw new ApiError(404, "Item not found");
 }
 
@@ -92,13 +102,19 @@ export function assertStatus(kind: ItemKind, status: unknown): string {
   throw new ApiError(400, "Invalid status");
 }
 
-export function assertCategory(category: unknown): string {
-  if (typeof category === "string" && (CATEGORY_KEYS as string[]).includes(category)) return category;
+/** The org's own category keys — fetch once per request (db is already org-scoped) and pass to parseItemInput. */
+export async function orgCategoryKeys(db: ScopedDb): Promise<string[]> {
+  const rows = await db.category.findMany({ select: { key: true } });
+  return rows.map((r) => r.key);
+}
+
+export function assertCategory(category: unknown, validKeys: string[]): string {
+  if (typeof category === "string" && validKeys.includes(category)) return category;
   throw new ApiError(400, "Invalid category");
 }
 
 /** Normalizes an untrusted JSON body into the same shape the web board's dialogs submit. */
-export function parseItemInput(kind: ItemKind, body: Record<string, unknown>): PipelineItemInput {
+export function parseItemInput(kind: ItemKind, body: Record<string, unknown>, validCategoryKeys: string[]): PipelineItemInput {
   const title = typeof body.title === "string" ? body.title.trim() : "";
   if (!title) throw new ApiError(400, "Title is required");
   const str = (v: unknown) => (typeof v === "string" ? v : "");
@@ -110,7 +126,7 @@ export function parseItemInput(kind: ItemKind, body: Record<string, unknown>): P
   return {
     title,
     pitch: str(body.pitch),
-    category: assertCategory(body.category ?? "EDUCATIONAL") as PipelineItemInput["category"],
+    category: assertCategory(body.category ?? validCategoryKeys[0] ?? "", validCategoryKeys),
     status: assertStatus(kind, body.status ?? "IDEA"),
     dueDate,
     cost: Math.max(0, Math.round(Number(body.cost) || 0)),
@@ -123,7 +139,7 @@ export function parseItemInput(kind: ItemKind, body: Record<string, unknown>): P
   };
 }
 
-/** The web app's existing server actions, reused so the mobile API shares their side effects (activity log, revalidation). */
+/** The web app's existing server actions, reused so the mobile API shares their side effects (activity log, revalidation, org scoping). */
 export const ITEM_ACTIONS = {
   youtube: {
     create: createYoutubeVideo,

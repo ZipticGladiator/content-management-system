@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
 import { AssetType } from "@/app/generated/prisma/client";
+import { scopedPrisma } from "@/lib/org";
 import { ASSET_TYPE_KEYS } from "@/lib/assets";
 import type { ItemKind } from "@/lib/types";
 
@@ -34,18 +34,21 @@ function toData(data: AssetInput) {
   };
 }
 
-export async function createAsset(data: AssetInput) {
-  await prisma.asset.create({ data: toData(data) });
+export async function createAsset(orgId: string, data: AssetInput) {
+  const db = scopedPrisma(orgId);
+  await db.asset.create({ data: { ...toData(data), orgId } });
   revalidatePath("/assets");
 }
 
-export async function updateAsset(id: string, data: AssetInput) {
-  await prisma.asset.update({ where: { id }, data: toData(data) });
+export async function updateAsset(orgId: string, id: string, data: AssetInput) {
+  const db = scopedPrisma(orgId);
+  await db.asset.update({ where: { id }, data: toData(data) });
   revalidatePath("/assets");
 }
 
 /** Removes the CMS entry only — the file on Google Drive is untouched. */
-export async function deleteAsset(id: string) {
-  await prisma.asset.delete({ where: { id } });
+export async function deleteAsset(orgId: string, id: string) {
+  const db = scopedPrisma(orgId);
+  await db.asset.delete({ where: { id } });
   revalidatePath("/assets");
 }

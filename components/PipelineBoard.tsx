@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CATEGORY_KEYS,
-  CATEGORY_LABELS,
+  categoryLabel,
   stageColorVar,
   stageLabel,
+  type CategoryOption,
   type StageDef,
 } from "@/lib/pipeline";
 import { fmtDate, isLate, rand } from "@/lib/format";
@@ -21,6 +21,8 @@ type SortKey = "title" | "status" | "due" | "cost" | "prog";
 
 type Props = {
   kind: ItemKind;
+  orgId: string;
+  categories: CategoryOption[];
   title: string;
   subtitle: string;
   icon?: ReactNode;
@@ -60,6 +62,8 @@ function pct(item: PipelineItem, stages: readonly StageDef[]) {
 
 export default function PipelineBoard({
   kind,
+  orgId,
+  categories,
   title,
   subtitle,
   icon,
@@ -105,7 +109,7 @@ export default function PipelineBoard({
   } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [bulkCategory, setBulkCategory] = useState<string>(CATEGORY_KEYS[0]);
+  const [bulkCategory, setBulkCategory] = useState<string>(categories[0]?.key ?? "");
   const [bulkBusy, setBulkBusy] = useState(false);
 
   function toggleSelect(id: string, e?: React.SyntheticEvent) {
@@ -444,9 +448,9 @@ export default function PipelineBoard({
         </div>
         <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filter by category">
           <option value="all">All categories</option>
-          {CATEGORY_KEYS.map((key) => (
-            <option key={key} value={key}>
-              {CATEGORY_LABELS[key]}
+          {categories.map((c) => (
+            <option key={c.key} value={c.key}>
+              {c.label}
             </option>
           ))}
         </select>
@@ -469,9 +473,9 @@ export default function PipelineBoard({
             <strong>{selected.size}</strong> selected
           </span>
           <select value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)} aria-label="Bulk category">
-            {CATEGORY_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {CATEGORY_LABELS[key]}
+            {categories.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label}
               </option>
             ))}
           </select>
@@ -575,7 +579,7 @@ export default function PipelineBoard({
                           ) : null}
                         </span>
                         <span className="meta">
-                          <span>{CATEGORY_LABELS[item.category]}</span>
+                          <span>{categoryLabel(categories, item.category)}</span>
                           {item.dueDate ? (
                             <span className={late ? "late" : ""}>Due {fmtDate(item.dueDate)}</span>
                           ) : null}
@@ -610,6 +614,7 @@ export default function PipelineBoard({
         <ListView
           items={sortedList()}
           stages={stages}
+          categories={categories}
           sort={sort}
           dir={dir}
           onSort={toggleSort}
@@ -625,6 +630,8 @@ export default function PipelineBoard({
       {dialogItem ? (
         <ItemDialog
           kind={kind}
+          orgId={orgId}
+          categories={categories}
           stages={stages}
           steps={steps}
           showCostAndEditor={showCostAndEditor}
@@ -663,6 +670,7 @@ export default function PipelineBoard({
 function ListView({
   items,
   stages,
+  categories,
   sort,
   dir,
   onSort,
@@ -675,6 +683,7 @@ function ListView({
 }: {
   items: PipelineItem[];
   stages: readonly StageDef[];
+  categories: CategoryOption[];
   sort: SortKey;
   dir: number;
   onSort: (key: SortKey) => void;
@@ -755,7 +764,7 @@ function ListView({
                       </span>
                     ) : null}
                   </button>
-                  <div className="cat">{CATEGORY_LABELS[item.category]}</div>
+                  <div className="cat">{categoryLabel(categories, item.category)}</div>
                 </td>
                 <td>
                   <select

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { generateScriptDraftForScript } from "@/app/scripts/actions";
-import { handle, requireUser } from "@/lib/mobile-api";
+import { handle, requireScoped } from "@/lib/mobile-api";
 
 /**
  * Hook + outline draft from Gemini — the same generator as the web editor's
@@ -8,7 +8,7 @@ import { handle, requireUser } from "@/lib/mobile-api";
  * one Gemini attempt per request (see lib/ai.ts), the app retries.
  */
 export const POST = handle(async (req: NextRequest, ctx: RouteContext<"/api/mobile/scripts/[id]/ai-draft">) => {
-  await requireUser(req);
+  const { session } = await requireScoped(req);
   const { id } = await ctx.params;
-  return NextResponse.json(await generateScriptDraftForScript(id));
+  return NextResponse.json(await generateScriptDraftForScript(session.orgId, id));
 });

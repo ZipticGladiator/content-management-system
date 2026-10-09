@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { scopedPrisma } from "@/lib/org";
 import { GoalPlatform } from "@/app/generated/prisma/client";
 
 export type GoalInput = {
@@ -22,17 +22,20 @@ function toData(data: GoalInput) {
   };
 }
 
-export async function createGoal(data: GoalInput) {
-  await prisma.goal.create({ data: toData(data) });
+export async function createGoal(orgId: string, data: GoalInput) {
+  const db = scopedPrisma(orgId);
+  await db.goal.create({ data: { ...toData(data), orgId } });
   revalidatePath("/goals");
 }
 
-export async function updateGoal(id: string, data: GoalInput) {
-  await prisma.goal.update({ where: { id }, data: toData(data) });
+export async function updateGoal(orgId: string, id: string, data: GoalInput) {
+  const db = scopedPrisma(orgId);
+  await db.goal.update({ where: { id }, data: toData(data) });
   revalidatePath("/goals");
 }
 
-export async function deleteGoal(id: string) {
-  await prisma.goal.delete({ where: { id } });
+export async function deleteGoal(orgId: string, id: string) {
+  const db = scopedPrisma(orgId);
+  await db.goal.delete({ where: { id } });
   revalidatePath("/goals");
 }

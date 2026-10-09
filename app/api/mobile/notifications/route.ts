@@ -3,6 +3,6 @@ import { getNotifications } from "@/lib/notifications";
 import { handle, requireUser } from "@/lib/mobile-api";
 
 export const GET = handle(async (req: NextRequest) => {
-  await requireUser(req);
-  return NextResponse.json({ notifications: await getNotifications() });
+  const user = await requireUser(req);
+  return NextResponse.json({ notifications: await getNotifications(user.orgId) });
 });

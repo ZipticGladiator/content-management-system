@@ -1,4 +1,5 @@
 import "server-only";
+import { scopedPrisma } from "@/lib/org";
 import { prisma } from "@/lib/prisma";
 import type { ItemKind } from "@/lib/types";
 
@@ -6,6 +7,9 @@ import type { ItemKind } from "@/lib/types";
 // (https://docs.expo.dev/push-notifications/sending-notifications/). Devices
 // register their Expo push token through /api/mobile/push. Sending never
 // throws: a failed push must not break the action that triggered it.
+//
+// Every send is scoped to one org — PushDevice.orgId (lib/org.ts) — so a
+// comment in one workspace only ever reaches that workspace's own phones.
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const BATCH_SIZE = 100; // Expo's per-request limit
@@ -39,6 +43,7 @@ async function send(messages: PushMessage[]): Promise<void> {
       }
       const { data } = (await res.json()) as { data?: PushTicket[] };
       // Tickets come back in message order. Forget devices that uninstalled the app or revoked permission.
+      // Not org-scoped: a dead token is dead everywhere, and a device only ever belongs to one org anyway.
       const dead = (data ?? [])
         .map((ticket, j) => (ticket.details?.error === "DeviceNotRegistered" ? batch[j].to : null))
         .filter((t): t is string => !!t);
@@ -49,13 +54,15 @@ async function send(messages: PushMessage[]): Promise<void> {
   }
 }
 
-/** Sends one notification to every registered device, optionally skipping one user's (e.g. the comment's author). */
+/** Sends one notification to every registered device in one org, optionally skipping one user's (e.g. the comment's author). */
 export async function notifyAll(
+  orgId: string,
   { title, body, data }: { title: string; body: string; data: PushData },
   { excludeUserId }: { excludeUserId?: string } = {}
 ): Promise<void> {
   try {
-    const devices = await prisma.pushDevice.findMany({
+    const db = scopedPrisma(orgId);
+    const devices = await db.pushDevice.findMany({
       where: excludeUserId ? { userId: { not: excludeUserId } } : {},
       select: { token: true },
     });
@@ -71,8 +78,9 @@ function truncate(text: string, max: number): string {
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 
-/** "New comment" push to everyone except the author. */
+/** "New comment" push to everyone in the org except the author. */
 export async function notifyNewComment(opts: {
+  orgId: string;
   kind: ItemKind;
   itemId: string;
   author: string;
@@ -80,11 +88,13 @@ export async function notifyNewComment(opts: {
   authorUserId?: string;
 }): Promise<void> {
   try {
+    const db = scopedPrisma(opts.orgId);
     const item =
       opts.kind === "youtube"
-        ? await prisma.youtubeVideo.findUnique({ where: { id: opts.itemId }, select: { title: true } })
-        : await prisma.tiktokClip.findUnique({ where: { id: opts.itemId }, select: { title: true } });
+        ? await db.youtubeVideo.findUnique({ where: { id: opts.itemId }, select: { title: true } })
+        : await db.tiktokClip.findUnique({ where: { id: opts.itemId }, select: { title: true } });
     await notifyAll(
+      opts.orgId,
       {
         title: truncate(item?.title ?? "New comment", 60),
         body: truncate(`${opts.author}: ${opts.body}`, 180),

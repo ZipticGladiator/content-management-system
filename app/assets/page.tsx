@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { requireOrgSession } from "@/lib/org";
 import AssetsView from "@/components/AssetsView";
 import { createAsset, deleteAsset, updateAsset } from "@/app/assets/actions";
 import type { AssetEntry, AssetItemOption } from "@/lib/assets";
@@ -6,16 +6,19 @@ import type { AssetEntry, AssetItemOption } from "@/lib/assets";
 export const dynamic = "force-dynamic";
 
 export default async function AssetsPage() {
+  const { session, db } = await requireOrgSession();
+  const orgId = session.orgId;
+
   const [rows, videos, clips] = await Promise.all([
-    prisma.asset.findMany({
+    db.asset.findMany({
       include: {
         youtubeVideo: { select: { id: true, title: true, deletedAt: true } },
         tiktokClip: { select: { id: true, title: true, deletedAt: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.youtubeVideo.findMany({ where: { deletedAt: null }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
-    prisma.tiktokClip.findMany({ where: { deletedAt: null }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
+    db.youtubeVideo.findMany({ where: { deletedAt: null }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
+    db.tiktokClip.findMany({ where: { deletedAt: null }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
   ]);
 
   const assets: AssetEntry[] = rows.map((r) => {
@@ -35,7 +38,13 @@ export default async function AssetsPage() {
 
   return (
     <div className="wrap">
-      <AssetsView assets={assets} itemOptions={itemOptions} onCreate={createAsset} onUpdate={updateAsset} onDelete={deleteAsset} />
+      <AssetsView
+        assets={assets}
+        itemOptions={itemOptions}
+        onCreate={createAsset.bind(null, orgId)}
+        onUpdate={updateAsset.bind(null, orgId)}
+        onDelete={deleteAsset.bind(null, orgId)}
+      />
     </div>
   );
 }

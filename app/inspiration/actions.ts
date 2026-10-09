@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { scopedPrisma } from "@/lib/org";
 import { InspirationPlatform, InspirationType } from "@/app/generated/prisma/client";
 
 export type InspirationInput = {
@@ -13,17 +13,20 @@ export type InspirationInput = {
   description: string;
 };
 
-export async function createInspiration(data: InspirationInput) {
-  await prisma.inspiration.create({ data });
+export async function createInspiration(orgId: string, data: InspirationInput) {
+  const db = scopedPrisma(orgId);
+  await db.inspiration.create({ data: { ...data, orgId } });
   revalidatePath("/inspiration");
 }
 
-export async function updateInspiration(id: string, data: InspirationInput) {
-  await prisma.inspiration.update({ where: { id }, data });
+export async function updateInspiration(orgId: string, id: string, data: InspirationInput) {
+  const db = scopedPrisma(orgId);
+  await db.inspiration.update({ where: { id }, data });
   revalidatePath("/inspiration");
 }
 
-export async function deleteInspiration(id: string) {
-  await prisma.inspiration.delete({ where: { id } });
+export async function deleteInspiration(orgId: string, id: string) {
+  const db = scopedPrisma(orgId);
+  await db.inspiration.delete({ where: { id } });
   revalidatePath("/inspiration");
 }

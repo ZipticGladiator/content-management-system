@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
-import { handle, requireUser } from "@/lib/mobile-api";
+import { handle, requireScoped } from "@/lib/mobile-api";
+import { getCurrentOrg, getUsage } from "@/lib/org";
 
 export const GET = handle(async (req) => {
-  const user = await requireUser(req);
-  return NextResponse.json({ user: { id: user.uid, email: user.email, name: user.name, role: user.role } });
+  const { session, db } = await requireScoped(req);
+  const [org, usage] = await Promise.all([getCurrentOrg(session.orgId), getUsage(db)]);
+  return NextResponse.json({
+    user: { id: session.uid, email: session.email, name: session.name, role: session.role },
+    org: org && {
+      id: org.id,
+      name: org.name,
+      accentColor: org.accentColor,
+      plan: org.plan,
+      limits: { seatLimit: org.seatLimit, accountLimit: org.accountLimit, aiDraftLimit: org.aiDraftLimit },
+      usage,
+    },
+  });
 });

@@ -1,15 +1,21 @@
-import { PrismaClient, Category } from "../app/generated/prisma/client";
+import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-const CATEGORY_MAP: Record<string, Category> = {
-  Sequels: Category.EDUCATIONAL,
-  "DevSecOps & cloud": Category.TECHNICAL,
-  "Hands-on": Category.TECHNICAL,
-  Community: Category.LIFESTYLE,
-  "SA & industry": Category.EDUCATIONAL,
+// The fixed id the multi-tenancy migration gave Hacking Hub's own workspace
+// (prisma/migrations/20261009120000_add_org_tables) — this seed script is
+// specifically that workspace's starter content, not a template for every org.
+const HACKING_HUB_ORG_ID = "org_hackinghub";
+
+// Category keys, matching the ones that migration seeded for this org.
+const CATEGORY_MAP: Record<string, string> = {
+  Sequels: "EDUCATIONAL",
+  "DevSecOps & cloud": "TECHNICAL",
+  "Hands-on": "TECHNICAL",
+  Community: "LIFESTYLE",
+  "SA & industry": "EDUCATIONAL",
 };
 
 const ideas = [
@@ -36,9 +42,9 @@ const ideas = [
 ];
 
 async function main() {
-  const count = await prisma.youtubeVideo.count();
+  const count = await prisma.youtubeVideo.count({ where: { orgId: HACKING_HUB_ORG_ID } });
   if (count > 0) {
-    console.log(`Skipping seed: ${count} YoutubeVideo rows already exist.`);
+    console.log(`Skipping seed: ${count} YoutubeVideo rows already exist for this workspace.`);
     return;
   }
 
@@ -49,6 +55,7 @@ async function main() {
         pitch: idea.pitch,
         category: CATEGORY_MAP[idea.cat],
         topPick: idea.top,
+        orgId: HACKING_HUB_ORG_ID,
       },
     });
   }

@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/prisma";
 import { mapTiktokClip } from "@/lib/mappers";
 import { TIKTOK_STAGES } from "@/lib/pipeline";
+import { requireOrgSession } from "@/lib/org";
 import PipelineBoard from "@/components/PipelineBoard";
 import TikTokIcon from "@/components/icons/TikTokIcon";
 import { buildAuthUrl, getConnectedAccount } from "@/lib/tiktok-oauth";
@@ -24,8 +24,11 @@ export default async function TiktokPage({
   searchParams: Promise<{ open?: string; tiktok_connected?: string; tiktok_error?: string }>;
 }) {
   const { open, tiktok_connected, tiktok_error } = await searchParams;
-  const [clips, editors] = await Promise.all([
-    prisma.tiktokClip.findMany({
+  const { session, db } = await requireOrgSession();
+  const orgId = session.orgId;
+
+  const [clips, editors, categories] = await Promise.all([
+    db.tiktokClip.findMany({
       where: { deletedAt: null },
       include: {
         script: { select: { id: true } },
@@ -33,10 +36,11 @@ export default async function TiktokPage({
       },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.editor.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+    db.editor.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+    db.category.findMany({ orderBy: { order: "asc" }, select: { key: true, label: true } }),
   ]);
 
-  const account = await getConnectedAccount();
+  const account = await getConnectedAccount(orgId);
   const itemStats: Record<string, StatEntry[]> = {};
   let overview: StatEntry[] | null = null;
 
@@ -46,7 +50,7 @@ export default async function TiktokPage({
       Promise.all(
         posted.map(async (c) => {
           const clipId = extractTiktokVideoId(c.url)!;
-          const stats = await fetchClipStats(clipId);
+          const stats = await fetchClipStats(orgId, clipId);
           if (stats) {
             itemStats[c.id] = [
               { label: "views", value: stats.views.toLocaleString() },
@@ -57,7 +61,7 @@ export default async function TiktokPage({
           }
         })
       ),
-      fetchAccountOverview(),
+      fetchAccountOverview(orgId),
     ]);
     if (accountOverview) {
       overview = [
@@ -71,24 +75,26 @@ export default async function TiktokPage({
   return (
     <PipelineBoard
       kind="tiktok"
+      orgId={orgId}
       title="TikTok pipeline"
-      subtitle="Siya | Cybersecurity — short-form clips, idea to posted"
+      subtitle="Short-form clips, idea to posted"
       icon={<TikTokIcon size={36} />}
       initialOpenId={open}
       items={clips.map(mapTiktokClip)}
+      categories={categories}
       stages={TIKTOK_STAGES}
       showTopPick={false}
       showCostAndEditor
-      onCreate={createTiktokClip}
-      onUpdate={updateTiktokClip}
-      onDelete={deleteTiktokClip}
-      onDuplicate={duplicateTiktokClip}
-      onStatusChange={updateTiktokStatus}
-      onCategoryChange={updateTiktokCategory}
+      onCreate={createTiktokClip.bind(null, orgId)}
+      onUpdate={updateTiktokClip.bind(null, orgId)}
+      onDelete={deleteTiktokClip.bind(null, orgId)}
+      onDuplicate={duplicateTiktokClip.bind(null, orgId)}
+      onStatusChange={updateTiktokStatus.bind(null, orgId)}
+      onCategoryChange={updateTiktokCategory.bind(null, orgId)}
       connectPlatformLabel="TikTok"
       connectedAccount={account ? { title: account.displayName } : null}
       connectUrl={buildAuthUrl()}
-      onDisconnect={disconnectTiktokAccount}
+      onDisconnect={disconnectTiktokAccount.bind(null, orgId)}
       itemStats={itemStats}
       editorOptions={editors.map((e) => e.name)}
       overviewTitle="Account overview (current totals)"

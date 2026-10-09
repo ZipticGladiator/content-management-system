@@ -1,5 +1,5 @@
 import "server-only";
-import { prisma } from "@/lib/prisma";
+import { scopedPrisma } from "@/lib/org";
 
 export type NotificationEntry = {
   id: string;
@@ -13,23 +13,24 @@ export type NotificationEntry = {
 
 const RECENT_HOURS = 48;
 
-export async function getNotifications(): Promise<NotificationEntry[]> {
+export async function getNotifications(orgId: string): Promise<NotificationEntry[]> {
+  const db = scopedPrisma(orgId);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const since = new Date(Date.now() - RECENT_HOURS * 3600 * 1000);
 
   const [overdueVideos, overdueClips, recentComments] = await Promise.all([
-    prisma.youtubeVideo.findMany({
+    db.youtubeVideo.findMany({
       where: { deletedAt: null, dueDate: { lt: today }, status: { not: "PUBLISHED" } },
       select: { id: true, title: true, dueDate: true },
       orderBy: { dueDate: "asc" },
     }),
-    prisma.tiktokClip.findMany({
+    db.tiktokClip.findMany({
       where: { deletedAt: null, dueDate: { lt: today }, status: { not: "POSTED" } },
       select: { id: true, title: true, dueDate: true },
       orderBy: { dueDate: "asc" },
     }),
-    prisma.comment.findMany({
+    db.comment.findMany({
       where: {
         isSystem: false,
         createdAt: { gte: since },

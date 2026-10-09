@@ -1,12 +1,15 @@
-import { prisma } from "@/lib/prisma";
+import { requireOrgSession } from "@/lib/org";
 import { createScriptForClip, createScriptForVideo } from "@/app/scripts/actions";
 import ScriptsList, { type ScriptRow } from "@/components/ScriptsList";
 
 export const dynamic = "force-dynamic";
 
 export default async function ScriptsPage() {
+  const { session, db } = await requireOrgSession();
+  const orgId = session.orgId;
+
   const [scripts, videosWithoutScript, clipsWithoutScript] = await Promise.all([
-    prisma.script.findMany({
+    db.script.findMany({
       where: {
         OR: [{ youtubeVideo: { deletedAt: null } }, { tiktokClip: { deletedAt: null } }],
       },
@@ -20,12 +23,12 @@ export default async function ScriptsPage() {
       },
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.youtubeVideo.findMany({
+    db.youtubeVideo.findMany({
       where: { script: null, deletedAt: null },
       select: { id: true, title: true },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.tiktokClip.findMany({
+    db.tiktokClip.findMany({
       where: { script: null, deletedAt: null },
       select: { id: true, title: true },
       orderBy: { createdAt: "asc" },
@@ -41,6 +44,9 @@ export default async function ScriptsPage() {
     body: s.body,
   }));
 
+  const boundCreateForVideo = createScriptForVideo.bind(null, orgId);
+  const boundCreateForClip = createScriptForClip.bind(null, orgId);
+
   return (
     <div className="wrap">
       <header className="page-header">
@@ -51,7 +57,7 @@ export default async function ScriptsPage() {
       </header>
 
       <div className="bar" style={{ marginTop: 26 }}>
-        <form action={createScriptForVideo} style={{ display: "flex", gap: 8 }}>
+        <form action={boundCreateForVideo} style={{ display: "flex", gap: 8 }}>
           <select name="youtubeVideoId" aria-label="Pick a YouTube video" required defaultValue="">
             <option value="" disabled>
               New script for a YouTube video…
@@ -66,7 +72,7 @@ export default async function ScriptsPage() {
             Start
           </button>
         </form>
-        <form action={createScriptForClip} style={{ display: "flex", gap: 8 }}>
+        <form action={boundCreateForClip} style={{ display: "flex", gap: 8 }}>
           <select name="tiktokClipId" aria-label="Pick a TikTok clip" required defaultValue="">
             <option value="" disabled>
               New script for a TikTok clip…

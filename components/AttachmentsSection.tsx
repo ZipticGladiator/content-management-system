@@ -9,7 +9,7 @@ function isImage(url: string) {
   return /\.(png|jpe?g|gif|webp|svg)$/i.test(url);
 }
 
-export default function AttachmentsSection({ kind, itemId }: { kind: ItemKind; itemId: string }) {
+export default function AttachmentsSection({ orgId, kind, itemId }: { orgId: string; kind: ItemKind; itemId: string }) {
   const [attachments, setAttachments] = useState<AttachmentEntry[] | null>(null);
   const [label, setLabel] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -18,13 +18,13 @@ export default function AttachmentsSection({ kind, itemId }: { kind: ItemKind; i
 
   useEffect(() => {
     let cancelled = false;
-    getAttachments(kind, itemId).then((rows) => {
+    getAttachments(orgId, kind, itemId).then((rows) => {
       if (!cancelled) setAttachments(rows);
     });
     return () => {
       cancelled = true;
     };
-  }, [kind, itemId]);
+  }, [orgId, kind, itemId]);
 
   async function handleUpload() {
     const file = fileRef.current?.files?.[0];
@@ -35,7 +35,7 @@ export default function AttachmentsSection({ kind, itemId }: { kind: ItemKind; i
       const formData = new FormData();
       formData.set("file", file);
       formData.set("label", label);
-      const entry = await uploadAttachment(kind, itemId, formData);
+      const entry = await uploadAttachment(orgId, kind, itemId, formData);
       setAttachments((prev) => [...(prev ?? []), entry]);
       setLabel("");
       if (fileRef.current) fileRef.current.value = "";
@@ -48,7 +48,7 @@ export default function AttachmentsSection({ kind, itemId }: { kind: ItemKind; i
 
   async function handleDelete(id: string) {
     setAttachments((prev) => (prev ?? []).filter((a) => a.id !== id));
-    await deleteAttachment(kind, id);
+    await deleteAttachment(orgId, kind, id);
   }
 
   return (

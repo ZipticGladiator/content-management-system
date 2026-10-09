@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { CATEGORY_LABELS } from "@/lib/pipeline";
+import { categoryLabel, type CategoryOption } from "@/lib/pipeline";
 import { rand, fmtDate } from "@/lib/format";
 import type { AnalyticsSummary, WeekBucket } from "@/lib/analytics";
 import ChartIcon from "@/components/icons/ChartIcon";
@@ -11,11 +11,13 @@ import ChartIcon from "@/components/icons/ChartIcon";
 // without re-running it; both pairs failed on the first (brand-literal) try.
 const YOUTUBE_COLOR = "#f4432e";
 const TIKTOK_COLOR = "#0ea5a5";
-const CATEGORY_COLORS: Record<string, string> = {
-  EDUCATIONAL: "#7c3aed",
-  TECHNICAL: "#0d9488",
-  LIFESTYLE: "#2563eb",
-};
+// Validated the same way as YOUTUBE_COLOR/TIKTOK_COLOR above; cycles for orgs with more
+// than 3 categories (a 4th+ category repeats a color rather than using an unvalidated one).
+const CATEGORY_PALETTE = ["#7c3aed", "#0d9488", "#2563eb"];
+function categoryColor(categories: CategoryOption[], key: string): string {
+  const i = categories.findIndex((c) => c.key === key);
+  return CATEGORY_PALETTE[(i < 0 ? 0 : i) % CATEGORY_PALETTE.length];
+}
 
 function fmtSigned(n: number): string {
   return `${n >= 0 ? "+" : ""}${n.toLocaleString()}`;
@@ -124,7 +126,7 @@ function WeeklyOutputChart({ weeks }: { weeks: WeekBucket[] }) {
   );
 }
 
-export default function AnalyticsView({ summary }: { summary: AnalyticsSummary }) {
+export default function AnalyticsView({ summary, categories }: { summary: AnalyticsSummary; categories: CategoryOption[] }) {
   const totalCategory = summary.categoryMix.reduce((a, c) => a + c.count, 0);
 
   return (
@@ -202,16 +204,16 @@ export default function AnalyticsView({ summary }: { summary: AnalyticsSummary }
                 .map((c) => (
                   <i
                     key={c.category}
-                    style={{ width: `${(c.count / totalCategory) * 100}%`, background: CATEGORY_COLORS[c.category] }}
-                    title={`${CATEGORY_LABELS[c.category]}: ${c.count}`}
+                    style={{ width: `${(c.count / totalCategory) * 100}%`, background: categoryColor(categories, c.category) }}
+                    title={`${categoryLabel(categories, c.category)}: ${c.count}`}
                   />
                 ))}
             </div>
             <div className="legend">
               {summary.categoryMix.map((c) => (
                 <span key={c.category}>
-                  <i className="sw" style={{ background: CATEGORY_COLORS[c.category] }} />
-                  {CATEGORY_LABELS[c.category]} {c.count} ({Math.round((c.count / totalCategory) * 100)}%)
+                  <i className="sw" style={{ background: categoryColor(categories, c.category) }} />
+                  {categoryLabel(categories, c.category)} {c.count} ({Math.round((c.count / totalCategory) * 100)}%)
                 </span>
               ))}
             </div>

@@ -1,21 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { createAsset } from "@/app/assets/actions";
-import { handle, parseAssetInput, readJson, requireUser } from "@/lib/mobile-api";
+import { handle, parseAssetInput, readJson, requireScoped } from "@/lib/mobile-api";
 
 /** Every asset (newest first) plus the videos/clips an asset can be linked to. */
 export const GET = handle(async (req: NextRequest) => {
-  await requireUser(req);
+  const { db } = await requireScoped(req);
   const [rows, videos, clips] = await Promise.all([
-    prisma.asset.findMany({
+    db.asset.findMany({
       include: {
         youtubeVideo: { select: { id: true, title: true } },
         tiktokClip: { select: { id: true, title: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.youtubeVideo.findMany({ where: { deletedAt: null }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
-    prisma.tiktokClip.findMany({ where: { deletedAt: null }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
+    db.youtubeVideo.findMany({ where: { deletedAt: null }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
+    db.tiktokClip.findMany({ where: { deletedAt: null }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
   ]);
   return NextResponse.json({
     assets: rows.map((r) => ({
@@ -39,7 +38,7 @@ export const GET = handle(async (req: NextRequest) => {
 });
 
 export const POST = handle(async (req: NextRequest) => {
-  await requireUser(req);
-  await createAsset(parseAssetInput(await readJson(req)));
+  const { session } = await requireScoped(req);
+  await createAsset(session.orgId, parseAssetInput(await readJson(req)));
   return NextResponse.json({ ok: true }, { status: 201 });
 });

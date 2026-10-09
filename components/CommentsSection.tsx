@@ -12,27 +12,27 @@ function initials(name: string): string {
   return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
-export default function CommentsSection({ kind, itemId }: { kind: ItemKind; itemId: string }) {
+export default function CommentsSection({ orgId, kind, itemId }: { orgId: string; kind: ItemKind; itemId: string }) {
   const [comments, setComments] = useState<CommentEntry[] | null>(null);
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    getComments(kind, itemId).then((rows) => {
+    getComments(orgId, kind, itemId).then((rows) => {
       if (!cancelled) setComments(rows);
     });
     return () => {
       cancelled = true;
     };
-  }, [kind, itemId]);
+  }, [orgId, kind, itemId]);
 
   async function handlePost() {
     const trimmedBody = body.trim();
     if (!trimmedBody) return;
     setPosting(true);
     try {
-      const entry = await addComment(kind, itemId, trimmedBody);
+      const entry = await addComment(orgId, kind, itemId, trimmedBody);
       setComments((prev) => [...(prev ?? []), entry]);
       setBody("");
     } finally {
@@ -42,7 +42,7 @@ export default function CommentsSection({ kind, itemId }: { kind: ItemKind; item
 
   async function handleDelete(id: string) {
     setComments((prev) => (prev ?? []).filter((c) => c.id !== id));
-    await deleteComment(kind, id);
+    await deleteComment(orgId, kind, id);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {

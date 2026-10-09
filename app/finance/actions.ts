@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { scopedPrisma } from "@/lib/org";
 
 export type EditorInput = {
   name: string;
@@ -15,29 +15,33 @@ export type EditorInput = {
   notes: string;
 };
 
-export async function createEditor(data: EditorInput) {
-  await prisma.editor.create({ data });
+export async function createEditor(orgId: string, data: EditorInput) {
+  const db = scopedPrisma(orgId);
+  await db.editor.create({ data: { ...data, orgId } });
   revalidatePath("/finance");
 }
 
-export async function updateEditor(id: string, data: EditorInput) {
-  await prisma.editor.update({ where: { id }, data });
+export async function updateEditor(orgId: string, id: string, data: EditorInput) {
+  const db = scopedPrisma(orgId);
+  await db.editor.update({ where: { id }, data });
   revalidatePath("/finance");
 }
 
-export async function deleteEditor(id: string) {
-  await prisma.editor.delete({ where: { id } });
+export async function deleteEditor(orgId: string, id: string) {
+  const db = scopedPrisma(orgId);
+  await db.editor.delete({ where: { id } });
   revalidatePath("/finance");
 }
 
-export async function markItemsPaid(items: { id: string; kind: "youtube" | "tiktok" }[]) {
+export async function markItemsPaid(orgId: string, items: { id: string; kind: "youtube" | "tiktok" }[]) {
+  const db = scopedPrisma(orgId);
   // Sequential on purpose: concurrent calls to the same bound server action
   // reference (via Promise.all) were observed to silently drop all but one.
   for (const item of items) {
     if (item.kind === "youtube") {
-      await prisma.youtubeVideo.update({ where: { id: item.id }, data: { paid: true } });
+      await db.youtubeVideo.update({ where: { id: item.id }, data: { paid: true } });
     } else {
-      await prisma.tiktokClip.update({ where: { id: item.id }, data: { paid: true } });
+      await db.tiktokClip.update({ where: { id: item.id }, data: { paid: true } });
     }
   }
   revalidatePath("/finance");
